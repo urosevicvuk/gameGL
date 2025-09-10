@@ -1,0 +1,534 @@
+# depslib dependency file v1.0
+1576257479 source:d:\raf\2019 - 2020\grafika\projekti\rafgl\main.c
+	<stdio.h>
+	<stdlib.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<rafgl.h>
+	<game_constants.h>
+	<main_state.h>
+
+1563893648 d:\raf\2019 - 2020\grafika\projekti\rafgl\include\glad\glad.h
+	<KHR/khrplatform.h>
+
+1563893648 d:\raf\2019 - 2020\grafika\projekti\rafgl\include\khr\khrplatform.h
+	<stdint.h>
+	<inttypes.h>
+	<stdint.h>
+
+1555373963 d:\raf\2019 - 2020\grafika\projekti\rafgl\include\glfw\glfw3.h
+	<stddef.h>
+	<stdint.h>
+	<GLES/gl.h>
+	<GLES/glext.h>
+	<GLES2/gl2.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl3.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl31.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl32.h>
+	<GLES2/gl2ext.h>
+	<OpenGL/gl3.h>
+	<OpenGL/gl3ext.h>
+	<GL/glcorearb.h>
+	<OpenGL/gl.h>
+	<OpenGL/glu.h>
+	<GL/gl.h>
+	<GL/glext.h>
+	<GL/glu.h>
+	<vulkan/vulkan.h>
+
+1571020569 d:\raf\2019 - 2020\grafika\projekti\rafgl\rafgl.h
+	<string.h>
+	<stdio.h>
+	<math.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<stb_image.h>
+	"rafgl_keys.h"
+	<stb_image.h>
+
+1563893648 source:d:\raf\2019 - 2020\grafika\projekti\rafgl\src\glad\glad.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<glad/glad.h>
+	<windows.h>
+	<winapifamily.h>
+	<dlfcn.h>
+
+1572832674 d:\raf\2019 - 2020\grafika\projekti\rafgl\include\main_state.h
+	<GLFW/glfw3.h>
+	<rafgl.h>
+
+1576257451 source:d:\raf\2019 - 2020\grafika\projekti\rafgl\src\main_state.c
+	<main_state.h>
+	<glad/glad.h>
+	<math.h>
+	<rafgl.h>
+	<game_constants.h>
+
+1569767630 d:\raf\2019 - 2020\grafika\projekti\rafgl\include\stb_image.h
+	"stb_image.h"
+	<stdio.h>
+	<stdlib.h>
+	<stdarg.h>
+	<stddef.h>
+	<stdlib.h>
+	<string.h>
+	<limits.h>
+	<math.h>
+	<stdio.h>
+	<assert.h>
+	<stdint.h>
+	<emmintrin.h>
+	<intrin.h>
+	<arm_neon.h>
+
+1569781757 d:\raf\2019 - 2020\grafika\projekti\rafgl\rafgl_keys.h
+
+1576253655 d:\raf\2019 - 2020\grafika\projekti\rafgl\include\rafgl.h
+	<string.h>
+	<stdio.h>
+	<math.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<stb_image.h>
+	<rafgl_keys.h>
+	<math_3d.h>
+	<stb_image.h>
+	<stb_image_write.h>
+
+1569778157 d:\raf\2019 - 2020\grafika\projekti\rafgl\include\rafgl_keys.h
+
+1571528413 d:\raf\2019 - 2020\grafika\projekti\rafgl\include\stb_image_write.h
+	<stdlib.h>
+	<stdio.h>
+	<stdarg.h>
+	<stdlib.h>
+	<string.h>
+	<math.h>
+	<assert.h>
+
+1572833533 d:\raf\2019 - 2020\grafika\projekti\rafgl\include\game_constants.h
+
+1573824592 d:\raf\2019 - 2020\grafika\projekti\rafgl\include\math_3d.h
+	<math.h>
+	<stdio.h>
+
+1578680535 source:e:\mveniger\grafika\vezbe13p\rafgl\main.c
+	<stdio.h>
+	<stdlib.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<rafgl.h>
+	<game_constants.h>
+	<main_state.h>
+
+1578680535 e:\mveniger\grafika\vezbe13p\rafgl\include\glad\glad.h
+	<KHR/khrplatform.h>
+
+1578680535 e:\mveniger\grafika\vezbe13p\rafgl\include\khr\khrplatform.h
+	<stdint.h>
+	<inttypes.h>
+	<stdint.h>
+
+1578680535 e:\mveniger\grafika\vezbe13p\rafgl\include\glfw\glfw3.h
+	<stddef.h>
+	<stdint.h>
+	<GLES/gl.h>
+	<GLES/glext.h>
+	<GLES2/gl2.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl3.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl31.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl32.h>
+	<GLES2/gl2ext.h>
+	<OpenGL/gl3.h>
+	<OpenGL/gl3ext.h>
+	<GL/glcorearb.h>
+	<OpenGL/gl.h>
+	<OpenGL/glu.h>
+	<GL/gl.h>
+	<GL/glext.h>
+	<GL/glu.h>
+	<vulkan/vulkan.h>
+
+1578680535 e:\mveniger\grafika\vezbe13p\rafgl\include\rafgl.h
+	<string.h>
+	<stdio.h>
+	<math.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<stb_image.h>
+	<rafgl_keys.h>
+	<math_3d.h>
+	<stb_image.h>
+	<stb_image_write.h>
+
+1578680535 e:\mveniger\grafika\vezbe13p\rafgl\include\stb_image.h
+	"stb_image.h"
+	<stdio.h>
+	<stdlib.h>
+	<stdarg.h>
+	<stddef.h>
+	<stdlib.h>
+	<string.h>
+	<limits.h>
+	<math.h>
+	<stdio.h>
+	<assert.h>
+	<stdint.h>
+	<emmintrin.h>
+	<intrin.h>
+	<arm_neon.h>
+
+1578680535 e:\mveniger\grafika\vezbe13p\rafgl\include\rafgl_keys.h
+
+1578680535 e:\mveniger\grafika\vezbe13p\rafgl\include\math_3d.h
+	<math.h>
+	<stdio.h>
+
+1578680535 e:\mveniger\grafika\vezbe13p\rafgl\include\stb_image_write.h
+	<stdlib.h>
+	<stdio.h>
+	<stdarg.h>
+	<stdlib.h>
+	<string.h>
+	<math.h>
+	<assert.h>
+
+1578680535 e:\mveniger\grafika\vezbe13p\rafgl\include\game_constants.h
+
+1578680535 e:\mveniger\grafika\vezbe13p\rafgl\include\main_state.h
+	<GLFW/glfw3.h>
+	<rafgl.h>
+
+1578680536 source:e:\mveniger\grafika\vezbe13p\rafgl\src\glad\glad.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<glad/glad.h>
+	<windows.h>
+	<winapifamily.h>
+	<dlfcn.h>
+
+1578685834 source:e:\mveniger\grafika\vezbe13p\rafgl\src\main_state.c
+	<main_state.h>
+	<glad/glad.h>
+	<math.h>
+	<rafgl.h>
+	<game_constants.h>
+
+1578684138 source:c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\src\glad\glad.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<glad/glad.h>
+	<windows.h>
+	<winapifamily.h>
+	<dlfcn.h>
+
+1578684136 c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\include\glad\glad.h
+	<KHR/khrplatform.h>
+
+1578684136 c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\include\khr\khrplatform.h
+	<stdint.h>
+	<inttypes.h>
+	<stdint.h>
+
+1602086113 source:c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\main.c
+	<stdio.h>
+	<stdlib.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<rafgl.h>
+	<game_constants.h>
+	<main_state.h>
+
+1578684136 c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\include\glfw\glfw3.h
+	<stddef.h>
+	<stdint.h>
+	<GLES/gl.h>
+	<GLES/glext.h>
+	<GLES2/gl2.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl3.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl31.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl32.h>
+	<GLES2/gl2ext.h>
+	<OpenGL/gl3.h>
+	<OpenGL/gl3ext.h>
+	<GL/glcorearb.h>
+	<OpenGL/gl.h>
+	<OpenGL/glu.h>
+	<GL/gl.h>
+	<GL/glext.h>
+	<GL/glu.h>
+	<vulkan/vulkan.h>
+
+1578684136 c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\include\rafgl.h
+	<string.h>
+	<stdio.h>
+	<math.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<stb_image.h>
+	<rafgl_keys.h>
+	<math_3d.h>
+	<stb_image.h>
+	<stb_image_write.h>
+
+1578684136 c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\include\stb_image.h
+	"stb_image.h"
+	<stdio.h>
+	<stdlib.h>
+	<stdarg.h>
+	<stddef.h>
+	<stdlib.h>
+	<string.h>
+	<limits.h>
+	<math.h>
+	<stdio.h>
+	<assert.h>
+	<stdint.h>
+	<emmintrin.h>
+	<intrin.h>
+	<arm_neon.h>
+
+1578684136 c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\include\rafgl_keys.h
+
+1578684136 c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\include\math_3d.h
+	<math.h>
+	<stdio.h>
+
+1578684136 c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\include\stb_image_write.h
+	<stdlib.h>
+	<stdio.h>
+	<stdarg.h>
+	<stdlib.h>
+	<string.h>
+	<math.h>
+	<assert.h>
+
+1578684136 c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\include\game_constants.h
+
+1578684136 c:\users\marko\desktop\grafika2020\vezbe13petak\vezbe13petak\rafgl\include\main_state.h
+	<GLFW/glfw3.h>
+	<rafgl.h>
+
+1602082514 source:e:\mveniger\rafgl\main.c
+	<stdio.h>
+	<stdlib.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<rafgl.h>
+	<game_constants.h>
+	<main_state.h>
+
+1578684136 e:\mveniger\rafgl\include\glad\glad.h
+	<KHR/khrplatform.h>
+
+1578684136 e:\mveniger\rafgl\include\khr\khrplatform.h
+	<stdint.h>
+	<inttypes.h>
+	<stdint.h>
+
+1578684136 e:\mveniger\rafgl\include\glfw\glfw3.h
+	<stddef.h>
+	<stdint.h>
+	<GLES/gl.h>
+	<GLES/glext.h>
+	<GLES2/gl2.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl3.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl31.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl32.h>
+	<GLES2/gl2ext.h>
+	<OpenGL/gl3.h>
+	<OpenGL/gl3ext.h>
+	<GL/glcorearb.h>
+	<OpenGL/gl.h>
+	<OpenGL/glu.h>
+	<GL/gl.h>
+	<GL/glext.h>
+	<GL/glu.h>
+	<vulkan/vulkan.h>
+
+1578684136 e:\mveniger\rafgl\include\rafgl.h
+	<string.h>
+	<stdio.h>
+	<math.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<stb_image.h>
+	<rafgl_keys.h>
+	<math_3d.h>
+	<stb_image.h>
+	<stb_image_write.h>
+
+1578684136 e:\mveniger\rafgl\include\stb_image.h
+	"stb_image.h"
+	<stdio.h>
+	<stdlib.h>
+	<stdarg.h>
+	<stddef.h>
+	<stdlib.h>
+	<string.h>
+	<limits.h>
+	<math.h>
+	<stdio.h>
+	<assert.h>
+	<stdint.h>
+	<emmintrin.h>
+	<intrin.h>
+	<arm_neon.h>
+
+1578684136 e:\mveniger\rafgl\include\rafgl_keys.h
+
+1578684136 e:\mveniger\rafgl\include\math_3d.h
+	<math.h>
+	<stdio.h>
+
+1578684136 e:\mveniger\rafgl\include\stb_image_write.h
+	<stdlib.h>
+	<stdio.h>
+	<stdarg.h>
+	<stdlib.h>
+	<string.h>
+	<math.h>
+	<assert.h>
+
+1578684136 e:\mveniger\rafgl\include\game_constants.h
+
+1578684136 e:\mveniger\rafgl\include\main_state.h
+	<GLFW/glfw3.h>
+	<rafgl.h>
+
+1578684138 source:e:\mveniger\rafgl\src\glad\glad.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<glad/glad.h>
+	<windows.h>
+	<winapifamily.h>
+	<dlfcn.h>
+
+1602082822 source:e:\mveniger\rafgl\src\main_state.c
+	<main_state.h>
+	<glad/glad.h>
+	<math.h>
+	<rafgl.h>
+
+1757522957 source:c:\users\vuk23\desktop\rafgl\main.c
+	<stdio.h>
+	<stdlib.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<rafgl.h>
+	<game_constants.h>
+	<main_state.h>
+
+1757506707 c:\users\vuk23\desktop\rafgl\include\glad\glad.h
+	<KHR/khrplatform.h>
+
+1757506707 c:\users\vuk23\desktop\rafgl\include\khr\khrplatform.h
+	<stdint.h>
+	<inttypes.h>
+	<stdint.h>
+
+1757506707 c:\users\vuk23\desktop\rafgl\include\glfw\glfw3.h
+	<stddef.h>
+	<stdint.h>
+	<GLES/gl.h>
+	<GLES/glext.h>
+	<GLES2/gl2.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl3.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl31.h>
+	<GLES2/gl2ext.h>
+	<GLES3/gl32.h>
+	<GLES2/gl2ext.h>
+	<OpenGL/gl3.h>
+	<OpenGL/gl3ext.h>
+	<GL/glcorearb.h>
+	<OpenGL/gl.h>
+	<OpenGL/glu.h>
+	<GL/gl.h>
+	<GL/glext.h>
+	<GL/glu.h>
+	<vulkan/vulkan.h>
+
+1757523840 c:\users\vuk23\desktop\rafgl\include\rafgl.h
+	<string.h>
+	<stdio.h>
+	<math.h>
+	<glad/glad.h>
+	<GLFW/glfw3.h>
+	<stb_image.h>
+	<rafgl_keys.h>
+	<math_3d.h>
+	<stb_image.h>
+	<stb_image_write.h>
+
+1757506707 c:\users\vuk23\desktop\rafgl\include\stb_image.h
+	"stb_image.h"
+	<stdio.h>
+	<stdlib.h>
+	<stdarg.h>
+	<stddef.h>
+	<stdlib.h>
+	<string.h>
+	<limits.h>
+	<math.h>
+	<stdio.h>
+	<assert.h>
+	<stdint.h>
+	<emmintrin.h>
+	<intrin.h>
+	<arm_neon.h>
+
+1757506707 c:\users\vuk23\desktop\rafgl\include\rafgl_keys.h
+
+1757506707 c:\users\vuk23\desktop\rafgl\include\math_3d.h
+	<math.h>
+	<stdio.h>
+
+1757506707 c:\users\vuk23\desktop\rafgl\include\stb_image_write.h
+	<stdlib.h>
+	<stdio.h>
+	<stdarg.h>
+	<stdlib.h>
+	<string.h>
+	<math.h>
+	<assert.h>
+
+1757506707 c:\users\vuk23\desktop\rafgl\include\game_constants.h
+
+1757507947 c:\users\vuk23\desktop\rafgl\include\main_state.h
+	<GLFW/glfw3.h>
+	<rafgl.h>
+
+1757506707 source:c:\users\vuk23\desktop\rafgl\src\glad\glad.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	<glad/glad.h>
+	<windows.h>
+	<winapifamily.h>
+	<dlfcn.h>
+
+1757523722 source:c:\users\vuk23\desktop\rafgl\src\main_state.c
+	<main_state.h>
+	<glad/glad.h>
+	<math.h>
+	<rafgl.h>
+
