@@ -38,6 +38,7 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
     gbuffer_program = rafgl_program_create_from_name("gbuffer");
     lighting_program = rafgl_program_create_from_name("deferred");
     postprocess_program = rafgl_program_create_from_name("postprocess");
+    shadow_program = rafgl_program_create_from_name("shadows");
     
     // Initialize fullscreen quad
     fullscreen_quad_init(&quad);
@@ -82,6 +83,28 @@ void main_state_update(GLFWwindow *window, float delta_time,
 }
 
 void main_state_render(GLFWwindow *window, void *args) {
+    // Shadow pass - render depth from first light's perspective
+    if(num_lights > 0) {
+        glBindFramebuffer(GL_FRAMEBUFFER, lights[0].shadowFBO);
+        glViewport(0, 0, 512, 512);
+        glClear(GL_DEPTH_BUFFER_BIT);
+        
+        glUseProgram(shadow_program);
+        mat4_t lightProjection = m4_perspective(90.0f, 1.0f, 1.0f, 25.0f);
+        mat4_t lightView = m4_look_at(lights[0].position, vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+        mat4_t lightSpaceMatrix = m4_mul(lightProjection, lightView);
+        
+        glUniformMatrix4fv(glGetUniformLocation(shadow_program, "lightSpaceMatrix"), 1, GL_FALSE, (float*)lightSpaceMatrix.m);
+        
+        // Render scene geometry for shadows (simplified)
+        mat4_t model = m4_translation(vec3(0.0f, -0.5f, 0.0f));
+        glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE, (float*)model.m);
+        glBindVertexArray(floor_mesh.vao_id);
+        glDrawArrays(GL_TRIANGLES, 0, floor_mesh.vertex_count);
+        
+        glViewport(0, 0, w, h);
+    }
+    
     // Geometry pass - render to G-Buffer
     gbuffer_bind_for_writing(&gbuffer);
     
@@ -156,6 +179,18 @@ void main_state_render(GLFWwindow *window, void *args) {
     glUniform1i(glGetUniformLocation(lighting_program, "gPosition"), 0);
     glUniform1i(glGetUniformLocation(lighting_program, "gNormal"), 1);
     glUniform1i(glGetUniformLocation(lighting_program, "gAlbedoSpec"), 2);
+    
+    // Bind shadow maps
+    if(num_lights > 0) {
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_2D, lights[0].shadowCubeMap);
+        glUniform1i(glGetUniformLocation(lighting_program, "shadowMap0"), 3);
+        
+        mat4_t lightProjection = m4_perspective(90.0f, 1.0f, 1.0f, 25.0f);
+        mat4_t lightView = m4_look_at(lights[0].position, vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+        mat4_t lightSpaceMatrix = m4_mul(lightProjection, lightView);
+        glUniformMatrix4fv(glGetUniformLocation(lighting_program, "lightSpaceMatrix0"), 1, GL_FALSE, (float*)lightSpaceMatrix.m);
+    }
     
     // Send lights to shader
     glUniform1i(glGetUniformLocation(lighting_program, "numLights"), num_lights);
