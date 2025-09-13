@@ -7,6 +7,7 @@ in vec2 TexCoord;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
+uniform sampler2D ssaoTexture;
 
 struct Light {
     vec3 Position;
@@ -51,7 +52,8 @@ void main()
     vec3 Diffuse = texture(gAlbedoSpec, TexCoord).rgb;
     float Specular = texture(gAlbedoSpec, TexCoord).a;
     
-    vec3 lighting = Diffuse * 0.1; // Ambient
+    float ssao = texture(ssaoTexture, TexCoord).r;
+    vec3 lighting = Diffuse * 0.1 * ssao; // Ambient with SSAO
     vec3 viewDir = normalize(viewPos - FragPos);
     
     for(int i = 0; i < numLights; ++i)

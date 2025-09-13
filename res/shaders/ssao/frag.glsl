@@ -6,43 +6,36 @@ in vec2 TexCoord;
 
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
-uniform sampler2D texNoise;
-
-uniform vec3 samples[64];
 uniform mat4 projection;
-uniform vec2 screenSize;
-
-int kernelSize = 64;
-float radius = 0.5;
-float bias = 0.025;
 
 void main()
 {
     vec3 fragPos = texture(gPosition, TexCoord).xyz;
     vec3 normal = normalize(texture(gNormal, TexCoord).rgb);
-    vec3 randomVec = normalize(texture(texNoise, TexCoord * screenSize / 4.0).xyz);
-    
-    vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
-    vec3 bitangent = cross(normal, tangent);
-    mat3 TBN = mat3(tangent, bitangent, normal);
     
     float occlusion = 0.0;
-    for(int i = 0; i < kernelSize; ++i)
-    {
-        vec3 sample = TBN * samples[i];
-        sample = fragPos + sample * radius; 
+    float radius = 0.3;
+    int samples = 16;
+    
+    // Simple circular sampling around the fragment
+    for(int i = 0; i < samples; ++i) {
+        float angle = float(i) / float(samples) * 6.28318; // 2 * PI
+        vec2 offset = vec2(cos(angle), sin(angle)) * radius;
         
-        vec4 offset = vec4(sample, 1.0);
-        offset = projection * offset;
-        offset.xyz /= offset.w;
-        offset.xyz = offset.xyz * 0.5 + 0.5;
+        vec4 samplePos = vec4(fragPos + vec3(offset * 0.1, 0.0), 1.0);
+        samplePos = projection * samplePos;
+        samplePos.xyz /= samplePos.w;
+        samplePos.xy = samplePos.xy * 0.5 + 0.5;
         
-        float sampleDepth = texture(gPosition, offset.xy).z;
+        float sampleDepth = texture(gPosition, samplePos.xy).z;
         
-        float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
-        occlusion += (sampleDepth >= sample.z + bias ? 1.0 : 0.0) * rangeCheck;           
+        if(sampleDepth < fragPos.z) {
+            occlusion += 1.0;
+        }
     }
-    occlusion = 1.0 - (occlusion / kernelSize);
+    
+    occlusion = 1.0 - (occlusion / float(samples));
+    occlusion = pow(occlusion, 2.0); // Enhance contrast
     
     FragColor = occlusion;
 }
