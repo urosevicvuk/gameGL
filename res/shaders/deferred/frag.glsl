@@ -29,20 +29,30 @@ uniform mat4 lightSpaceMatrix3;
 
 float ShadowCalculation(vec3 fragPos, int lightIndex)
 {
+    // Only light 0 casts shadows for now
     if(lightIndex == 0) {
         vec4 fragPosLightSpace = lightSpaceMatrix0 * vec4(fragPos, 1.0);
         vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
         projCoords = projCoords * 0.5 + 0.5;
         
+        // Check if fragment is outside light frustum
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || 
+           projCoords.y < 0.0 || projCoords.y > 1.0 || 
+           projCoords.z > 1.0) {
+            return 0.0; // No shadow outside frustum
+        }
+        
         float closestDepth = texture(shadowMap0, projCoords.xy).r;
         float currentDepth = projCoords.z;
         
-        float bias = 0.005;
-        float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
-        return shadow;
+        // Simple fixed bias to prevent shadow acne
+        float bias = 0.002;
+        
+        // Clean shadow test - either in shadow or not
+        return currentDepth - bias > closestDepth ? 0.8 : 0.0;
     }
     
-    return 0.0; // No shadows for other lights yet
+    return 0.0;
 }
 
 void main()
@@ -53,7 +63,7 @@ void main()
     float Specular = texture(gAlbedoSpec, TexCoord).a;
     
     float ssao = texture(ssaoTexture, TexCoord).r;
-    vec3 lighting = Diffuse * 0.1 * ssao; // Ambient with SSAO
+    vec3 lighting = Diffuse * 0.25 * ssao; // Brighter ambient with SSAO
     vec3 viewDir = normalize(viewPos - FragPos);
     
     for(int i = 0; i < numLights; ++i)

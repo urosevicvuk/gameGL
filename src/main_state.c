@@ -9,7 +9,7 @@ static int w, h;
 static Camera camera;
 static GBuffer gbuffer;
 static PointLight lights[8];
-static int num_lights = 4;
+static int num_lights = 3;
 
 static rafgl_meshPUN_t floor_mesh, wall_mesh, table_mesh;
 static GLuint gbuffer_program, lighting_program, shadow_program, postprocess_program, ssao_program;
@@ -84,11 +84,10 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
     rafgl_meshPUN_init(&cylinder_mesh);
     rafgl_meshPUN_load_cube(&cylinder_mesh, 1.0f);
     
-    // Setup tavern lights
-    lights[0] = (PointLight){vec3(2.0f, 2.5f, 0.0f), vec3(1.0f, 0.8f, 0.4f), 8.0f, 0, 0};   // Warm fireplace
-    lights[1] = (PointLight){vec3(-3.0f, 2.0f, -2.0f), vec3(0.9f, 0.9f, 0.7f), 5.0f, 0, 0}; // Candle
-    lights[2] = (PointLight){vec3(1.0f, 2.2f, -4.0f), vec3(0.8f, 0.9f, 0.6f), 6.0f, 0, 0};  // Lantern
-    lights[3] = (PointLight){vec3(-1.0f, 1.8f, 3.0f), vec3(1.0f, 0.7f, 0.3f), 4.0f, 0, 0};  // Table candle
+    // Setup three lights - positioned at actual flame tops + overhead
+    lights[0] = (PointLight){vec3(-2.0f, 0.35f, 1.0f), vec3(2.0f, 1.6f, 0.8f), 8.0f, 0, 0};   // First candle flame
+    lights[1] = (PointLight){vec3(2.0f, 0.35f, -1.0f), vec3(2.0f, 1.4f, 0.6f), 8.0f, 0, 0};   // Second candle flame  
+    lights[2] = (PointLight){vec3(0.0f, 4.0f, -1.0f), vec3(0.8f, 0.8f, 0.9f), 12.0f, 0, 0};  // Overhead moonlight
     
     // Setup shadow maps for lights
     for(int i = 0; i < num_lights; i++) {
@@ -111,17 +110,36 @@ void main_state_render(GLFWwindow *window, void *args) {
         glClear(GL_DEPTH_BUFFER_BIT);
         
         glUseProgram(shadow_program);
-        mat4_t lightProjection = m4_perspective(90.0f, 1.0f, 1.0f, 25.0f);
-        mat4_t lightView = m4_look_at(lights[0].position, vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+        mat4_t lightProjection = m4_perspective(60.0f, 1.0f, 0.1f, 15.0f);
+        // Light looks DOWN from its position (subtract Y to look down)
+        vec3_t lightTarget = vec3(lights[0].position.x, lights[0].position.y - 2.0f, lights[0].position.z);
+        mat4_t lightView = m4_look_at(lights[0].position, lightTarget, vec3(0.0f, 0.0f, 1.0f));
         mat4_t lightSpaceMatrix = m4_mul(lightProjection, lightView);
         
         glUniformMatrix4fv(glGetUniformLocation(shadow_program, "lightSpaceMatrix"), 1, GL_FALSE, (float*)lightSpaceMatrix.m);
         
-        // Render scene geometry for shadows (simplified)
-        mat4_t model = m4_translation(vec3(0.0f, -0.5f, 0.0f));
+        // Render scene geometry for shadows (floor + objects)
+        mat4_t model = m4_translation(vec3(0.0f, 0.0f, 0.0f));
         glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE, (float*)model.m);
         glBindVertexArray(floor_mesh.vao_id);
         glDrawArrays(GL_TRIANGLES, 0, floor_mesh.vertex_count);
+        
+        // Render tables for shadows
+        for(int i = 0; i < 3; i++) {
+            model = m4_mul(m4_translation(vec3(-3.0f + i * 3.0f, 0.9f, -1.0f)), m4_scaling(vec3(1.5f, 0.1f, 1.0f)));
+            glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE, (float*)model.m);
+            glBindVertexArray(cube_mesh.vao_id);
+            glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+            
+            // Chairs for shadows
+            for(int chair = 0; chair < 2; chair++) {
+                float chair_z = -1.0f + (chair ? 1.2f : -1.2f);
+                model = m4_mul(m4_translation(vec3(-3.0f + i * 3.0f, 0.4f, chair_z)), m4_scaling(vec3(0.4f, 0.8f, 0.4f)));
+                glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE, (float*)model.m);
+                glBindVertexArray(cube_mesh.vao_id);
+                glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+            }
+        }
         
         glViewport(0, 0, w, h);
     }
@@ -139,12 +157,22 @@ void main_state_render(GLFWwindow *window, void *args) {
     glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "projection"), 1, GL_FALSE, (float*)projection.m);
     glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 0.0f);
     
-    // Render floor
-    model = m4_translation(vec3(0.0f, -0.5f, 0.0f));
+    // Render solid wooden floor (no z-fighting)
+    model = m4_translation(vec3(0.0f, -0.01f, 0.0f));
     glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.6f, 0.4f, 0.2f); // Wood floor
+    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.4f, 0.28f, 0.16f); // Wood floor
     glBindVertexArray(floor_mesh.vao_id);
     glDrawArrays(GL_TRIANGLES, 0, floor_mesh.vertex_count);
+    
+    // Add plank groove lines on top of floor
+    for(int line_z = -10; line_z <= 10; line_z += 2) {
+        glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.25f, 0.18f, 0.1f); // Darker groove
+        model = m4_mul(m4_translation(vec3(0.0f, -0.005f, line_z * 1.0f)), 
+                      m4_scaling(vec3(20.0f, 0.005f, 0.05f))); // Thin groove lines
+        glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
+        glBindVertexArray(cube_mesh.vao_id);
+        glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+    }
     
     // Render tavern walls
     glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.5f, 0.3f, 0.2f); // Dark wood
@@ -157,7 +185,7 @@ void main_state_render(GLFWwindow *window, void *args) {
     for(int i = 0; i < 3; i++) {
         // Table
         glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.4f, 0.25f, 0.15f); // Table wood
-        model = m4_mul(m4_translation(vec3(-3.0f + i * 3.0f, 0.4f, -1.0f)), m4_scaling(vec3(1.5f, 0.1f, 1.0f)));
+        model = m4_mul(m4_translation(vec3(-3.0f + i * 3.0f, 0.9f, -1.0f)), m4_scaling(vec3(1.5f, 0.1f, 1.0f)));
         glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
         glBindVertexArray(cube_mesh.vao_id);
         glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
@@ -166,7 +194,7 @@ void main_state_render(GLFWwindow *window, void *args) {
         for(int j = 0; j < 4; j++) {
             float x_offset = (j % 2) ? 0.6f : -0.6f;
             float z_offset = (j < 2) ? 0.4f : -0.4f;
-            model = m4_mul(m4_translation(vec3(-3.0f + i * 3.0f + x_offset, 0.2f, -1.0f + z_offset)), m4_scaling(vec3(0.1f, 0.4f, 0.1f)));
+            model = m4_mul(m4_translation(vec3(-3.0f + i * 3.0f + x_offset, 0.45f, -1.0f + z_offset)), m4_scaling(vec3(0.1f, 0.9f, 0.1f)));
             glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
             glBindVertexArray(cube_mesh.vao_id);
             glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
@@ -176,7 +204,7 @@ void main_state_render(GLFWwindow *window, void *args) {
         glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.3f, 0.2f, 0.1f); // Chair wood
         for(int chair = 0; chair < 2; chair++) {
             float chair_z = -1.0f + (chair ? 1.2f : -1.2f);
-            model = m4_mul(m4_translation(vec3(-3.0f + i * 3.0f, 0.25f, chair_z)), m4_scaling(vec3(0.4f, 0.5f, 0.4f)));
+            model = m4_mul(m4_translation(vec3(-3.0f + i * 3.0f, 0.4f, chair_z)), m4_scaling(vec3(0.4f, 0.8f, 0.4f)));
             glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
             glBindVertexArray(cube_mesh.vao_id);
             glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
@@ -250,7 +278,7 @@ void main_state_render(GLFWwindow *window, void *args) {
         
         // Wooden plate
         glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.5f, 0.3f, 0.2f);
-        model = m4_mul(m4_translation(vec3(-3.0f + i * 3.0f - 0.3f, 0.52f, -1.0f - 0.2f)), 
+        model = m4_mul(m4_translation(vec3(-3.0f + i * 3.0f - 0.3f, 0.95f, -1.0f - 0.2f)), 
                        m4_scaling(vec3(0.25f, 0.02f, 0.25f)));
         glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
         glBindVertexArray(cube_mesh.vao_id);
@@ -267,100 +295,33 @@ void main_state_render(GLFWwindow *window, void *args) {
         glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
     }
     
-    // Render realistic light sources
-    
-    // Light 0: Fireplace (2.0f, 2.5f, 0.0f)
-    // Fireplace base
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.3f, 0.3f, 0.3f); // Stone
-    model = m4_mul(m4_translation(vec3(2.0f, 0.5f, 0.0f)), m4_scaling(vec3(1.5f, 1.0f, 0.8f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Fireplace back wall
-    model = m4_mul(m4_translation(vec3(2.0f, 1.5f, -0.3f)), m4_scaling(vec3(1.5f, 2.0f, 0.2f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Fire (glowing)
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 
-               lights[0].color.x * 1.5f, lights[0].color.y * 1.2f, lights[0].color.z * 0.3f);
-    model = m4_mul(m4_translation(vec3(2.0f, 1.2f, 0.0f)), m4_scaling(vec3(0.3f, 0.4f, 0.3f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Light 1: Table Candle (-3.0f, 2.0f, -2.0f)
-    // Candle base
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.6f, 0.4f, 0.2f); // Bronze
-    model = m4_mul(m4_translation(vec3(-3.0f, 0.52f, -2.0f)), m4_scaling(vec3(0.15f, 0.05f, 0.15f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Candle wax
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.9f, 0.9f, 0.8f); // Wax
-    model = m4_mul(m4_translation(vec3(-3.0f, 0.8f, -2.0f)), m4_scaling(vec3(0.08f, 0.5f, 0.08f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Candle flame
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 
-               lights[1].color.x * 2.0f, lights[1].color.y * 1.8f, lights[1].color.z * 0.8f);
-    model = m4_mul(m4_translation(vec3(-3.0f, 1.1f, -2.0f)), m4_scaling(vec3(0.05f, 0.1f, 0.05f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Light 2: Hanging Lantern (1.0f, 2.2f, -4.0f)
-    // Lantern body
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.4f, 0.3f, 0.2f); // Dark metal
-    model = m4_mul(m4_translation(vec3(1.0f, 2.2f, -4.0f)), m4_scaling(vec3(0.25f, 0.4f, 0.25f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Lantern chain
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.5f, 0.5f, 0.5f); // Chain metal
-    for(int j = 0; j < 3; j++) {
-        model = m4_mul(m4_translation(vec3(1.0f, 2.6f + j * 0.15f, -4.0f)), m4_scaling(vec3(0.03f, 0.1f, 0.03f)));
+    // Render two candles with proper materials and proportions (skip overhead light)
+    for(int i = 0; i < 2; i++) {
+        vec3_t candle_base_pos = vec3(lights[i].position.x, 0.025f, lights[i].position.z);
+        vec3_t candle_wax_pos = vec3(lights[i].position.x, 0.2f, lights[i].position.z);
+        
+        // Candle base (bronze holder)
+        glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.6f, 0.4f, 0.2f); // Bronze
+        model = m4_mul(m4_translation(candle_base_pos), m4_scaling(vec3(0.12f, 0.03f, 0.12f)));
+        glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
+        glBindVertexArray(cube_mesh.vao_id);
+        glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+        
+        // Candle wax (white) - shorter
+        glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.95f, 0.95f, 0.95f); // White wax
+        model = m4_mul(m4_translation(candle_wax_pos), m4_scaling(vec3(0.05f, 0.3f, 0.05f)));
+        glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
+        glBindVertexArray(cube_mesh.vao_id);
+        glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+        
+        // Candle flame (bright orange - positioned at light source)
+        glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 
+                   1.0f, 0.6f, 0.2f); // Bright orange flame
+        model = m4_mul(m4_translation(lights[i].position), m4_scaling(vec3(0.03f, 0.06f, 0.03f)));
         glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
         glBindVertexArray(cube_mesh.vao_id);
         glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
     }
-    
-    // Lantern light
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 
-               lights[2].color.x * 1.5f, lights[2].color.y * 1.5f, lights[2].color.z * 1.0f);
-    model = m4_mul(m4_translation(vec3(1.0f, 2.2f, -4.0f)), m4_scaling(vec3(0.15f, 0.2f, 0.15f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Light 3: Another table candle (-1.0f, 1.8f, 3.0f)
-    // Candle base  
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.6f, 0.4f, 0.2f); // Bronze
-    model = m4_mul(m4_translation(vec3(-1.0f, 0.52f, 3.0f)), m4_scaling(vec3(0.15f, 0.05f, 0.15f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Candle wax
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.8f, 0.6f, 0.5f); // Red wax
-    model = m4_mul(m4_translation(vec3(-1.0f, 0.8f, 3.0f)), m4_scaling(vec3(0.08f, 0.5f, 0.08f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Candle flame
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 
-               lights[3].color.x * 2.0f, lights[3].color.y * 1.5f, lights[3].color.z * 0.5f);
-    model = m4_mul(m4_translation(vec3(-1.0f, 1.1f, 3.0f)), m4_scaling(vec3(0.05f, 0.1f, 0.05f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
     
     // SSAO pass
     glBindFramebuffer(GL_FRAMEBUFFER, ssaoFBO);
@@ -401,8 +362,10 @@ void main_state_render(GLFWwindow *window, void *args) {
         glBindTexture(GL_TEXTURE_2D, lights[0].shadowCubeMap);
         glUniform1i(glGetUniformLocation(lighting_program, "shadowMap0"), 4);
         
-        mat4_t lightProjection = m4_perspective(90.0f, 1.0f, 1.0f, 25.0f);
-        mat4_t lightView = m4_look_at(lights[0].position, vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 1.0f, 0.0f));
+        mat4_t lightProjection = m4_perspective(60.0f, 1.0f, 0.1f, 15.0f);
+        // Light looks DOWN from its position (subtract Y to look down)
+        vec3_t lightTarget = vec3(lights[0].position.x, lights[0].position.y - 2.0f, lights[0].position.z);
+        mat4_t lightView = m4_look_at(lights[0].position, lightTarget, vec3(0.0f, 0.0f, 1.0f));
         mat4_t lightSpaceMatrix = m4_mul(lightProjection, lightView);
         glUniformMatrix4fv(glGetUniformLocation(lighting_program, "lightSpaceMatrix0"), 1, GL_FALSE, (float*)lightSpaceMatrix.m);
     }
