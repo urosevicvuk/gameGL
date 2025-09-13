@@ -1,5 +1,5 @@
 CC = gcc
-IN = main.c src/main_state.c src/tavern_renderer.c src/glad/glad.c
+IN = main.c src/main_state.c src/glad/glad.c
 OUT = main.out
 CFLAGS = -Wall -DGLFW_INCLUDE_NONE
 LFLAGS = -lglfw -ldl -lm
