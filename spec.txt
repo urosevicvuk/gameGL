@@ -1,0 +1,187 @@
+﻿Projekat
+RAF - Računarska Grafika 2022/2023
+Generalne informacije i zadatak
+Cilj projektnog zadatka je timski (do 3 člana) napraviti interaktivnu 3D aplikaciju. Projekat je moguće raditi i samostalno, ali zahtevi ostaju isti, boduje se podjednako kao i rad u timu. Projekat se piše u C-u (dozvoljen je i C++ ali nije preporučen bez pređašnjeg iskustva) sa pomoćnim bibliotekama. Preporučeno je, ali ne i obavezno, korišćenje biblioteke RAFGL sa vežbi. 
+Ako se ne koristi biblioteka sa časa lista dozvoljenih biblioteka je:
+* GLFW 
+* Bilo koja OpenGL Loading biblioteka (kao što su GLEW, glad, GL3W, itd.)
+Druge biblioteke dolaze u obzir, ali se obavezno konsultovati sa asistentom pre početka rada. Obavezno je koristiti OpenGL 3.3 verziju ili novije verzije. High level engine-i kao sto su Unity, Unreal, Ogre, itd. ne dolaze u obzir.
+
+
+Na projektu je obavezno koristiti program za kontrolu verzija koda kao što je Git ili SVN ukoliko se projekat radi u timu. Bitno je da jasno bude vidljivo učešće svih članova tima. Ukoliko se vidi da neki član tima nije imao učesća u projektu on neće dobiti poene. 
+Zahtevi i pravila
+* Interaktivna aplikacija - tema nije strogo definisana, slično kao i na prvom domaćem (osim kod specijalnih tema, videti ispod) i treba se napraviti interaktivna grafička aplikacija neke vrste, ovaj put u 3D prostoru. U ovom zadatku je i dalje fokus na tehničkoj realizaciji grafike i samo se to boduje.
+* OpenGL - Koristiti OpenGL 3.3 ili novije, tj GLSL 3.30 ili novije
+* RAFGL - Preporučeno je ali ne i obavezno korišćenje biblioteke rafgl sa vežbi. Nju možete i da editujete (pratite šta menjate radi lakše odbrane) ili da je ne koristite uopšte
+* Domaći treba da sadrži barem:
+   * Nove i/ili modifikovane šejdere (shader programe) u odnosu na ono što je rađeno na času
+   * Proceduralno generisana i/ili dinamička geometrija (nešto što nije iz OBJ fajla)
+   * Hijerarhije objekata gde se neki delovi programski kreću ili animiraju (točkovi, propeleri, …)
+   * Korišćenje drugih tekstura pored albedo (colour) tekstura
+* Zvuk je potpuno opcion - OpenAL je preporuka ako radite zvuk (https://ffainelli.github.io/openal-example/)
+
+
+Saveti
+* Upoznajte se sa postojećim kodom (strukture, funkcije i shaderi) preko primera sa vežbi
+* Logika aplikacije treba da bude jednostavna - logika preseka, sudaranja, orijentacija objekata zna biti komplikovana, pa je treba i svesti na minimum ili se ograničiti na par tipova interakcija i par ravni
+* U logici koristiti aproksimacije objekata - u logici kao što je detekcija pogotka, selekcija pomoću miša i ostaloj, aproksimirati objekte jednostavnim oblicima kao što su lopte, kocke, cilindri kako bi matematika bila što jednostavnija
+* Real time rendering - vodite računa o stvarima kao što su prekompleksni modeli (previliki broj poligona), nepotrebne računice, nepotrebne ili česte alokacije memorije, teške matematičke funkcije mnogo puta ponovljene, itd.
+Proširenje u odnosu na domaći 2
+Projekat je praktično proširenje drugog domaćeg zadatka. 
+
+
+Projekat se radi u timovima (do 3 člana) i potrebno je prijaviti tim (jedan od članova neka pošalje mail) najkasnije do kraja druge kolokvijumske nedelje. U mejlu je potrebno navesti ko su članovi tima.
+
+
+Ukoliko neko preda prvi i/ili drugi domaći i ne bude zadovoljan ishodom, može da se prijavi da radi projekat, ali računaće mu se samo poeni ostvareni na projektu. Ovo ne važi za studente koji su uhvaćeni u prepisivanju na nekom od ova dva domaća.
+
+
+Za projekat je potrebno odabrati i implementirati barem 3 od sledećih navedenih tehnika/algoritama/sistema
+* Deferred shading
+* SSAO
+* Procedural texture generation
+* Spotlight shadows and point light shadows
+* Subsurface scattering
+* Font and GUI rendering, GUIs in 3D space
+* Animated particle systems, emitter systems
+* Water rendering
+* Marching Cubes geometry generation
+* Procedural cloud rendering
+* Random terrain generation + hydraulic erosion simulation (video)
+* Volumetric light scattering
+* Skeletal animation and IK
+
+
+Projekat takodje mora imati fleksibilan post processing pipeline (lako je ređati post processing efekte) i barem jedan implementiran post processing efekat (bilo koji).
+
+
+Za projekat mora postojati i dokumentacija, u okviru koje bi bilo definisano koje tehnike i efekti su primenjeni, kao i koji student je radio na kojoj tehnici, efektu, animaciji i slično. Ukoliko implementacija nije bila u okviru pomoćne RAFGL biblioteke, potrebno je i navesti način pokretanja koda.
+________________
+
+
+
+
+Svako od studentata mora da komituje promene na repozitorijum projekta sa svojeg odvojenog naloga (ne mogu sva tri studenta sa istog naloga da vrše commit-ove)
+
+
+Preporučeno je, ali ne i obavezno, razbijanje projekta na više fajlova radi lakšeg rada, pregledanja i odbrane.
+
+
+U slučaju projekta, dodatna kompletnost projekta (meniji, gui, interaktivnost, game design, level design, fizika, zvuk, itd.) mogu da donesu dodatnih 5 bodova (do maksimuma od 70)
+Bodovanje
+Projekat nosi 70 bodova i bodovanje se deli na X glavna dela
+1. Generalna 3D grafika - 20b
+2. Specifične teme - 30b
+3. Post processing - 15b
+4. Urednost, preglednost, dokumentacija, struktura koda 5b
+Predaja projekta
+Projekat je potrebno predati barem 48h pre odbrane slanjem projekta na mail edotlic@raf.rs. Projekat mora biti odbranjen pre ispita u roku u kom student planira da izađe. Nije moguće izaći na ispit bez prethodno odbranjenog projekta.
+Krajnji rok slanja projekta za svaki rok biće naknadno unet, nakon što izađe raspored:
+* januarski:  24. Januar do 23:59:59
+* februarski:  9. Februar do 23:59:59
+* avgustovski: 2. Septembar do 23:59:59
+* septembarski: 17. Septembar do 23:59:59
+
+
+Pravila za slanje:
+* Subject maila treba da bude RG24P ime prezime indeks (na primer RG24P Emilija Dotlic RN 103 2020)
+* Sadržaj maila treba da bude samo zipp-ovan projekat nazvan isto kao i subject + .zip  pored ovoga proslediti i link do git repozitorijuma
+* Obavezno je direktorijum u kojem se nalazi projekat nazvati po istom paternu (najlakse bi bilo preimenovati RAFGL direktorijum sa vežbi i onda desni klik, pa send to Compressed)
+* Pre slanja obrisati sve izvršne fajlove (ovo nije obavezno zbog pravila, već gmail vam neće dozvoliti da šaljete atačment ako sadrži ovakve fajlove)
+Za svako prekršeno pravilo slanja se dobija (kumulativno) 5 negativnih bodova. Projekat minimalno nosi 0 bodova a maksimalno 70. 
+
+
+Odbrana projekta
+Odbrana projekta je obavezna i osvojeni bodovi se određuju na odbrani. Za odbrane će biti rezervisani termini na fakultetu i radiće se po rasporedu koji će biti objavljen naknadno. Student mora odbraniti projekat bar 2 dana ranije u odnosu na termin ispita na kom planira da izađe.
+
+
+Odbrana se može raditi na fakutetskim računarima ili na računarima koje ponesete sa sobom, s tim da je poželjno, ukoliko ste u mogućnosti, da ponesete svoje računare.
+Odbrana će trajati od 10 do 15 minuta po studentu i obuhvataće kratko demonstriranje rada projekta i objašnjavanje koda projekta, potencijalna pitanja vezana za kod ili tehnike primenjene u projektu.
+
+
+U slučaju prepisivanja od drugih studenata (otkriveno uz pomoć identičnih ili skoro identičnih kodova) svi uključeni studenti padaju ispit (nemaju dovoljno predispitnih bodova da izađu na ispit)
+
+
+U slučaju prepisivanja otkrivenog na odbrani (loše poznavanje implementacije i korišćenih tehnika) student ima pravo na modifikaciju projekta u realnom vremenu (slično kao kolokvijum, ali zbog specifičnosti svakog projekta, zadatak modifikacije se zadaje na osnovu projekta studenta koji je u pitanju). Ako student ne uspe da uradi modifikaciju pada ispit (bez projekta ne možete imati uslov za izlazak na ispit)
+
+
+Članovi tima mogu biti drugačije bodovani u odnosu na procenjen trud uložen u izradu projekta.
+
+
+Odbrana je preporučeno da se završi što je pre moguće.
+
+
+Sve dodatne informacije možete saznati putem maila (edotlic@raf.rs) ili na konsultacijama.
+
+
+________________
+
+
+Deffered shading
+  
+
+SSAO
+  
+
+
+
+________________
+
+Procedural Textures
+  
+
+________________
+
+
+Spotlight shadows
+  
+
+Point shadows
+  
+________________
+
+Subsurface scattering
+  
+
+
+
+GUI integrisan u 3D svet primer
+  
+
+________________
+
+
+Animated particle systems
+  
+
+
+
+Water rendering
+  
+
+________________
+
+
+Marching Cubes geometry generation
+  
+
+________________
+
+
+
+
+Procedural cloud rendering
+  
+
+Random terrain generation
+  
+
+________________
+
+
+
+
+Volumetric light scattering
+  
+
+Skeletal animation and IK
