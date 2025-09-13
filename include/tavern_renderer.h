@@ -14,6 +14,8 @@ typedef struct {
     vec3_t position;
     vec3_t color;
     float radius;
+    GLuint shadowCubeMap;
+    GLuint shadowFBO;
 } PointLight;
 
 typedef struct {
@@ -44,6 +46,21 @@ typedef struct {
 
 void fullscreen_quad_init(FullscreenQuad *quad);
 void fullscreen_quad_render(FullscreenQuad *quad);
+
+// Shadow mapping
+void setup_point_light_shadows(PointLight *light, int shadowWidth, int shadowHeight);
+void render_shadow_map(PointLight *light, rafgl_meshPUN_t *meshes, int meshCount, GLuint shadowProgram);
+
+// SSAO
+typedef struct {
+    GLuint framebuffer;
+    GLuint colorBuffer;
+    GLuint blurFramebuffer;
+    GLuint blurColorBuffer;
+    GLuint noiseTexture;
+} SSAOBuffer;
+
+void ssao_init(SSAOBuffer *ssao, int width, int height);
 
 // Lighting
 void render_point_lights(PointLight *lights, int count, Camera *cam, GBuffer *gb);

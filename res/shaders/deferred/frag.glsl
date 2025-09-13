@@ -15,8 +15,21 @@ struct Light {
 };
 
 uniform Light lights[8];
+uniform samplerCube shadowMaps[4];
 uniform int numLights;
 uniform vec3 viewPos;
+uniform float far_plane;
+
+float ShadowCalculation(vec3 fragPos, vec3 lightPos, samplerCube shadowMap)
+{
+    vec3 fragToLight = fragPos - lightPos;
+    float currentDepth = length(fragToLight);
+    float bias = 0.15;
+    float closestDepth = texture(shadowMap, fragToLight).r;
+    closestDepth *= far_plane;
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    return shadow;
+}
 
 void main()
 {
@@ -44,7 +57,10 @@ void main()
             float attenuation = 1.0 / (1.0 + 0.09 * distance + 0.032 * distance * distance);
             diffuse *= attenuation;
             specular *= attenuation;
-            lighting += diffuse + specular;
+            
+            // float shadow = ShadowCalculation(FragPos, lights[i].Position, shadowMaps[i]);
+            // lighting += (1.0 - shadow) * (diffuse + specular);
+            lighting += diffuse + specular; // Skip shadows for now, focus on SSAO
         }
     }
     

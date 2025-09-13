@@ -10,11 +10,19 @@ in vec3 Normal;
 
 uniform sampler2D texture_diffuse1;
 uniform sampler2D texture_specular1;
+uniform vec3 materialColor;
+uniform float hasTexture;
 
 void main()
 {
     gPosition = FragPos;
     gNormal = normalize(Normal);
-    gAlbedoSpec.rgb = texture(texture_diffuse1, TexCoord).rgb;
-    gAlbedoSpec.a = texture(texture_specular1, TexCoord).r;
+    
+    if (hasTexture > 0.5) {
+        gAlbedoSpec.rgb = texture(texture_diffuse1, TexCoord).rgb;
+        gAlbedoSpec.a = texture(texture_specular1, TexCoord).r;
+    } else {
+        gAlbedoSpec.rgb = materialColor;
+        gAlbedoSpec.a = 0.3; // Default specular
+    }
 }
