@@ -62,6 +62,40 @@ typedef struct {
 
 void ssao_init(SSAOBuffer *ssao, int width, int height);
 
+// Texture management
+typedef struct {
+    rafgl_texture_t diffuse;
+    rafgl_texture_t normal;
+    rafgl_texture_t specular;
+    int has_normal_map;
+    int has_specular_map;
+    float roughness;
+    float metallic;
+} Material;
+
+typedef struct {
+    Material wood_planks;
+    Material oak_table;
+    Material dark_wood;
+    Material medieval_stone;
+    Material brick_wall;
+    Material iron_metal;
+    Material rusty_metal;
+    Material ceramic;
+    Material leather;
+} TextureManager;
+
+// Material & texture functions
+void texture_manager_init(TextureManager *tm);
+void texture_manager_cleanup(TextureManager *tm);
+void material_bind(Material *mat, GLuint shader_program);
+
+// Procedural geometry generation
+void create_cylinder_mesh(rafgl_meshPUN_t *mesh, float radius, float height, int segments);
+void create_detailed_barrel_mesh(rafgl_meshPUN_t *mesh, float radius, float height);
+void create_ornate_chair_mesh(rafgl_meshPUN_t *mesh);
+void create_stone_corbel_mesh(rafgl_meshPUN_t *mesh);
+
 // Lighting
 void render_point_lights(PointLight *lights, int count, Camera *cam, GBuffer *gb);
 
