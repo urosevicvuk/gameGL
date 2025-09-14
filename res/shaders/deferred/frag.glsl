@@ -63,7 +63,7 @@ void main()
     float Specular = texture(gAlbedoSpec, TexCoord).a;
     
     float ssao = texture(ssaoTexture, TexCoord).r;
-    vec3 lighting = Diffuse * 0.25 * ssao; // Brighter ambient with SSAO
+    vec3 lighting = vec3(0.0); // No ambient light - pure darkness when no lights
     vec3 viewDir = normalize(viewPos - FragPos);
     
     for(int i = 0; i < numLights; ++i)
@@ -83,7 +83,11 @@ void main()
             diffuse *= attenuation;
             specular *= attenuation;
             
-            float shadow = ShadowCalculation(FragPos, i);
+            // Only calculate shadows for light index 0 (flashlight) when active
+            float shadow = 0.0;
+            if(i == 0 && numLights > 0) {
+                shadow = ShadowCalculation(FragPos, i);
+            }
             lighting += (1.0 - shadow) * (diffuse + specular);
         }
     }
