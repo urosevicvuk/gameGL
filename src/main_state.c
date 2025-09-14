@@ -30,6 +30,33 @@ static rafgl_meshPUN_t barrel_mesh, table_round_mesh, bench_mesh, stool_mesh;
 static rafgl_meshPUN_t beer_mug_mesh, green_bottle_mesh, wall_candle_mesh, food_plate_mesh;
 // Keep basic cube for fallback/debugging
 static rafgl_meshPUN_t cube_mesh;
+// Procedural candle geometry
+static rafgl_meshPUN_t candle_base_mesh, candle_flame_mesh;
+
+// Wall candles - Static models with flickering lights only
+typedef struct {
+    vec3_t position;         // Fixed wall position
+    float intensity;         // Animated light intensity (0.7-1.0)
+    float flicker_speed;     // Animation speed
+    float time_offset;       // Phase offset for variety
+    int light_index;         // Index in lights array
+} WallCandle;
+
+// Table candles - Object hierarchy with programmatic animation (Parent: base, Child: animated flame)
+typedef struct {
+    vec3_t base_position;    // Parent: candle base position (static)
+    vec3_t flame_offset;     // Child: flame offset relative to base (animated)
+    float intensity;         // Animated light intensity
+    float flicker_speed;     // Animation speed
+    float time_offset;       // Phase offset for variety
+    int light_index;         // Index in lights array
+} TableCandle;
+
+static WallCandle wall_candles[3];
+static int num_wall_candles = 3;
+static TableCandle table_candles[3];
+static int num_table_candles = 3;
+static float animation_time = 0.0f;
 
 // Scroll wheel callback for flashlight distance control
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
@@ -58,6 +85,13 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
     
     // Initialize camera
     camera_init(&camera);
+    
+    // Create procedural candle geometry using available RAFGL functions
+    rafgl_meshPUN_init(&candle_base_mesh);
+    rafgl_meshPUN_load_cube(&candle_base_mesh, 0.1f); // Simple cube for candle base
+    
+    rafgl_meshPUN_init(&candle_flame_mesh);
+    rafgl_meshPUN_load_cube(&candle_flame_mesh, 0.05f); // Small cube for flame
     
     // Initialize G-Buffer
     gbuffer_init(&gbuffer, width, height);
@@ -131,12 +165,71 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
     rafgl_meshPUN_init(&cube_mesh);
     rafgl_meshPUN_load_cube(&cube_mesh, 1.0f);
     
-    // No static lights - only the flashlight will illuminate the scene
+    // Initialize wall candles - Static models with flickering lights only
+    wall_candles[0] = (WallCandle){
+        .position = vec3(-4.4f, 1.2f, -4.5f),      // Replace wall rack position
+        .intensity = 1.0f,
+        .flicker_speed = 3.0f,
+        .time_offset = 0.0f,
+        .light_index = 0
+    };
     
-    // Setup shadow maps for lights
-    for(int i = 0; i < num_lights; i++) {
+    wall_candles[1] = (WallCandle){
+        .position = vec3(4.5f, 1.2f, -4.5f),       // Opposite wall
+        .intensity = 1.0f,
+        .flicker_speed = 2.5f,
+        .time_offset = 1.0f,
+        .light_index = 1
+    };
+    
+    wall_candles[2] = (WallCandle){
+        .position = vec3(0.0f, 1.8f, -4.8f),       // Center back wall
+        .intensity = 1.0f,
+        .flicker_speed = 2.8f,
+        .time_offset = 2.0f,
+        .light_index = 2
+    };
+    
+    // Initialize table candles - Object hierarchy with programmatic animation
+    float table_positions[][2] = {{-3.0f, -1.5f}, {0.5f, -4.0f}, {3.5f, -2.0f}};
+    for(int i = 0; i < num_table_candles; i++) {
+        table_candles[i] = (TableCandle){
+            .base_position = vec3(table_positions[i][0], 0.7f, table_positions[i][1]), // On table tops
+            .flame_offset = vec3(0.0f, 0.0f, 0.0f),     // Will be animated
+            .intensity = 1.0f,
+            .flicker_speed = 2.5f + i * 0.3f,
+            .time_offset = i * 0.8f,
+            .light_index = num_wall_candles + i
+        };
+    }
+    
+    // Create lights for all candles
+    // Wall candles
+    for(int i = 0; i < num_wall_candles; i++) {
+        lights[i] = (PointLight){
+            .position = wall_candles[i].position,
+            .color = vec3(1.0f, 0.6f, 0.3f), // Warm candle light
+            .radius = 6.0f,
+            .shadowFBO = 0,
+            .shadowCubeMap = 0
+        };
         setup_point_light_shadows(&lights[i], 512, 512);
     }
+    
+    // Table candles  
+    for(int i = 0; i < num_table_candles; i++) {
+        lights[num_wall_candles + i] = (PointLight){
+            .position = table_candles[i].base_position,
+            .color = vec3(1.0f, 0.6f, 0.3f), // Warm candle light
+            .radius = 5.0f,
+            .shadowFBO = 0,
+            .shadowCubeMap = 0
+        };
+        setup_point_light_shadows(&lights[num_wall_candles + i], 512, 512);
+    }
+    
+    num_lights = num_wall_candles + num_table_candles;
+    base_num_lights = num_lights; // All candles are now base lights
     
     // Initialize texture manager
     texture_manager_init(&texture_manager);
@@ -147,6 +240,51 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
 void main_state_update(GLFWwindow *window, float delta_time,
                        rafgl_game_data_t *game_data, void *args) {
     camera_update(&camera, window, delta_time);
+    
+    // Update animation time
+    animation_time += delta_time;
+    
+    // Animate wall candle lights only (no geometry movement)
+    for(int i = 0; i < num_wall_candles; i++) {
+        WallCandle *candle = &wall_candles[i];
+        
+        // Calculate animation phase for this candle
+        float phase = animation_time * candle->flicker_speed + candle->time_offset;
+        
+        // Animate flame intensity (0.7 to 1.0 range for realistic flicker)
+        candle->intensity = 0.85f + 0.15f * sinf(phase) * sinf(phase * 1.3f);
+        
+        // Update light color only (position stays fixed)
+        lights[candle->light_index].color = vec3(
+            candle->intensity * 1.0f,      // Red channel
+            candle->intensity * 0.6f,      // Green channel  
+            candle->intensity * 0.3f       // Blue channel (warm orange)
+        );
+    }
+    
+    // Animate table candle flames - Object hierarchy with programmatic movement
+    for(int i = 0; i < num_table_candles; i++) {
+        TableCandle *candle = &table_candles[i];
+        
+        // Calculate animation phase for this candle
+        float phase = animation_time * candle->flicker_speed + candle->time_offset;
+        
+        // Animate flame intensity (0.7 to 1.0 range for realistic flicker)
+        candle->intensity = 0.85f + 0.15f * sinf(phase) * sinf(phase * 1.3f);
+        
+        // Animate flame position (subtle wobble - child movement relative to parent)
+        candle->flame_offset.x = 0.01f * sinf(phase * 2.1f);
+        candle->flame_offset.y = 0.02f * sinf(phase * 1.7f); // More vertical movement
+        candle->flame_offset.z = 0.01f * sinf(phase * 2.3f);
+        
+        // Update light properties - Child (flame) position = Parent (base) + animated offset
+        lights[candle->light_index].position = v3_add(candle->base_position, candle->flame_offset);
+        lights[candle->light_index].color = vec3(
+            candle->intensity * 1.0f,      // Red channel
+            candle->intensity * 0.6f,      // Green channel  
+            candle->intensity * 0.3f       // Blue channel (warm orange)
+        );
+    }
     
     // Handle flashlight toggle with F key
     static int f_key_pressed = 0;
@@ -322,9 +460,32 @@ void main_state_render(GLFWwindow *window, void *args) {
             glDrawArrays(GL_TRIANGLES, 0, barrel_mesh.vertex_count);
         }
         
-        // Clean shadow pass - no old procedural decorations
+        // Render wall candles (static .obj models)
+        for(int i = 0; i < num_wall_candles; i++) {
+            WallCandle *candle = &wall_candles[i];
+            model = m4_mul(m4_translation(candle->position), m4_scaling(vec3(0.4f, 0.4f, 0.4f)));
+            glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE, (float*)model.m);
+            glBindVertexArray(wall_candle_mesh.vao_id);
+            glDrawArrays(GL_TRIANGLES, 0, wall_candle_mesh.vertex_count);
+        }
         
-        // No static candles in shadow pass either
+        // Render table candles (procedural with animated flames)
+        for(int i = 0; i < num_table_candles; i++) {
+            TableCandle *candle = &table_candles[i];
+            
+            // Render candle base (parent - static)
+            model = m4_mul(m4_translation(candle->base_position), m4_scaling(vec3(1.0f, 1.0f, 1.0f)));
+            glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE, (float*)model.m);
+            glBindVertexArray(candle_base_mesh.vao_id);
+            glDrawArrays(GL_TRIANGLES, 0, candle_base_mesh.vertex_count);
+            
+            // Render candle flame (child - animated position)
+            vec3_t flame_pos = v3_add(candle->base_position, v3_add(candle->flame_offset, vec3(0.0f, 0.18f, 0.0f))); // Above base
+            model = m4_mul(m4_translation(flame_pos), m4_scaling(vec3(1.0f, 1.0f, 1.0f)));
+            glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE, (float*)model.m);
+            glBindVertexArray(candle_flame_mesh.vao_id);
+            glDrawArrays(GL_TRIANGLES, 0, candle_flame_mesh.vertex_count);
+        }
         
         glViewport(0, 0, w, h);
     }
@@ -463,6 +624,36 @@ void main_state_render(GLFWwindow *window, void *args) {
         glDrawArrays(GL_TRIANGLES, 0, barrel_mesh.vertex_count);
     }
     
+    // Render wall candles (static .obj models on walls)
+    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.9f, 0.8f, 0.6f); // Warm candle wax
+    for(int i = 0; i < num_wall_candles; i++) {
+        WallCandle *candle = &wall_candles[i];
+        model = m4_mul(m4_translation(candle->position), m4_scaling(vec3(0.4f, 0.4f, 0.4f)));
+        glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
+        glBindVertexArray(wall_candle_mesh.vao_id);
+        glDrawArrays(GL_TRIANGLES, 0, wall_candle_mesh.vertex_count);
+    }
+    
+    // Render table candles (Object hierarchy - Parent: base, Child: animated flame)
+    for(int i = 0; i < num_table_candles; i++) {
+        TableCandle *candle = &table_candles[i];
+        
+        // Render candle base (parent - static, warm wax color)
+        glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.9f, 0.8f, 0.6f); // Candle wax
+        model = m4_mul(m4_translation(candle->base_position), m4_scaling(vec3(1.0f, 1.0f, 1.0f)));
+        glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
+        glBindVertexArray(candle_base_mesh.vao_id);
+        glDrawArrays(GL_TRIANGLES, 0, candle_base_mesh.vertex_count);
+        
+        // Render candle flame (child - animated position, bright orange)
+        glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 1.0f, 0.7f, 0.2f); // Bright flame
+        vec3_t flame_pos = v3_add(candle->base_position, v3_add(candle->flame_offset, vec3(0.0f, 0.18f, 0.0f))); // Above base
+        model = m4_mul(m4_translation(flame_pos), m4_scaling(vec3(1.0f, 1.0f, 1.0f)));
+        glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
+        glBindVertexArray(candle_flame_mesh.vao_id);
+        glDrawArrays(GL_TRIANGLES, 0, candle_flame_mesh.vertex_count);
+    }
+    
     // Add stone corbels to walls (stepped architecture creates excellent SSAO)
     glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.6f, 0.5f, 0.4f); // Light stone
     glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 0.0f);
@@ -482,23 +673,7 @@ void main_state_render(GLFWwindow *window, void *args) {
         }
     }
     
-    // Render weapon rack with hanging weapons
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.3f, 0.2f, 0.1f); // Dark wood
-    // Rack frame
-    model = m4_mul(m4_translation(vec3(-4.5f, 1.0f, -4.5f)), m4_scaling(vec3(0.2f, 2.0f, 1.0f)));
-    glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    
-    // Hanging weapons/tools
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.7f, 0.7f, 0.7f); // Metal
-    for(int i = 0; i < 3; i++) {
-        model = m4_mul(m4_translation(vec3(-4.4f, 1.5f - i * 0.3f, -4.8f + i * 0.3f)), 
-                       m4_scaling(vec3(0.05f, 0.4f, 0.05f))); // Sword/tool handles
-        glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1, GL_FALSE, (float*)model.m);
-        glBindVertexArray(cube_mesh.vao_id);
-        glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-    }
+    // Wall weapon racks removed - replaced with wall candles for better medieval ambiance
     
     // Clean tavern scene - only real 3D models
     
