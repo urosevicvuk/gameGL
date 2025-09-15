@@ -50,3 +50,7 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Project specific files
+specDomaci2.txt
+CLAUDE.md
