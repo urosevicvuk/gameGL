@@ -20,84 +20,100 @@ uniform sampler2D shadowMap0;
 uniform sampler2D shadowMap1;
 uniform sampler2D shadowMap2;
 uniform sampler2D shadowMap3;
+uniform sampler2D shadowMap4;
+uniform sampler2D shadowMap5;
+uniform sampler2D shadowMap6;
+uniform sampler2D shadowMap7;
 uniform int numLights;
 uniform vec3 viewPos;
 uniform mat4 lightSpaceMatrix0;
 uniform mat4 lightSpaceMatrix1;
 uniform mat4 lightSpaceMatrix2;
 uniform mat4 lightSpaceMatrix3;
+uniform mat4 lightSpaceMatrix4;
+uniform mat4 lightSpaceMatrix5;
+uniform mat4 lightSpaceMatrix6;
+uniform mat4 lightSpaceMatrix7;
 
 float ShadowCalculation(vec3 fragPos, int lightIndex)
 {
-    // All lights cast shadows now (up to 4 supported)
+    // Support shadows for all 8 lights
+    vec4 fragPosLightSpace;
+    vec3 projCoords;
+    float closestDepth, currentDepth;
+    float bias = 0.001;
+    
     if(lightIndex == 0) {
-        vec4 fragPosLightSpace = lightSpaceMatrix0 * vec4(fragPos, 1.0);
-        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        fragPosLightSpace = lightSpaceMatrix0 * vec4(fragPos, 1.0);
+        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
         projCoords = projCoords * 0.5 + 0.5;
-        
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || 
-           projCoords.y < 0.0 || projCoords.y > 1.0 || 
-           projCoords.z > 1.0) {
-            return 0.0;
-        }
-        
-        float closestDepth = texture(shadowMap0, projCoords.xy).r;
-        float currentDepth = projCoords.z;
-        float bias = 0.002;
-        
-        // Clean shadow test - either in shadow or not
-        return currentDepth - bias > closestDepth ? 0.8 : 0.0;
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
+        closestDepth = texture(shadowMap0, projCoords.xy).r;
+        currentDepth = projCoords.z;
+        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
     }
     else if(lightIndex == 1) {
-        vec4 fragPosLightSpace = lightSpaceMatrix1 * vec4(fragPos, 1.0);
-        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        fragPosLightSpace = lightSpaceMatrix1 * vec4(fragPos, 1.0);
+        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
         projCoords = projCoords * 0.5 + 0.5;
-        
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || 
-           projCoords.y < 0.0 || projCoords.y > 1.0 || 
-           projCoords.z > 1.0) {
-            return 0.0;
-        }
-        
-        float closestDepth = texture(shadowMap1, projCoords.xy).r;
-        float currentDepth = projCoords.z;
-        float bias = 0.002;
-        
-        return currentDepth - bias > closestDepth ? 0.8 : 0.0;
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
+        closestDepth = texture(shadowMap1, projCoords.xy).r;
+        currentDepth = projCoords.z;
+        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
     }
     else if(lightIndex == 2) {
-        vec4 fragPosLightSpace = lightSpaceMatrix2 * vec4(fragPos, 1.0);
-        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        fragPosLightSpace = lightSpaceMatrix2 * vec4(fragPos, 1.0);
+        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
         projCoords = projCoords * 0.5 + 0.5;
-        
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || 
-           projCoords.y < 0.0 || projCoords.y > 1.0 || 
-           projCoords.z > 1.0) {
-            return 0.0;
-        }
-        
-        float closestDepth = texture(shadowMap2, projCoords.xy).r;
-        float currentDepth = projCoords.z;
-        float bias = 0.002;
-        
-        return currentDepth - bias > closestDepth ? 0.8 : 0.0;
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
+        closestDepth = texture(shadowMap2, projCoords.xy).r;
+        currentDepth = projCoords.z;
+        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
     }
     else if(lightIndex == 3) {
-        vec4 fragPosLightSpace = lightSpaceMatrix3 * vec4(fragPos, 1.0);
-        vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        fragPosLightSpace = lightSpaceMatrix3 * vec4(fragPos, 1.0);
+        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
         projCoords = projCoords * 0.5 + 0.5;
-        
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || 
-           projCoords.y < 0.0 || projCoords.y > 1.0 || 
-           projCoords.z > 1.0) {
-            return 0.0;
-        }
-        
-        float closestDepth = texture(shadowMap3, projCoords.xy).r;
-        float currentDepth = projCoords.z;
-        float bias = 0.002;
-        
-        return currentDepth - bias > closestDepth ? 0.8 : 0.0;
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
+        closestDepth = texture(shadowMap3, projCoords.xy).r;
+        currentDepth = projCoords.z;
+        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
+    }
+    else if(lightIndex == 4) {
+        fragPosLightSpace = lightSpaceMatrix4 * vec4(fragPos, 1.0);
+        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        projCoords = projCoords * 0.5 + 0.5;
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
+        closestDepth = texture(shadowMap4, projCoords.xy).r;
+        currentDepth = projCoords.z;
+        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
+    }
+    else if(lightIndex == 5) {
+        fragPosLightSpace = lightSpaceMatrix5 * vec4(fragPos, 1.0);
+        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        projCoords = projCoords * 0.5 + 0.5;
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
+        closestDepth = texture(shadowMap5, projCoords.xy).r;
+        currentDepth = projCoords.z;
+        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
+    }
+    else if(lightIndex == 6) {
+        fragPosLightSpace = lightSpaceMatrix6 * vec4(fragPos, 1.0);
+        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        projCoords = projCoords * 0.5 + 0.5;
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
+        closestDepth = texture(shadowMap6, projCoords.xy).r;
+        currentDepth = projCoords.z;
+        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
+    }
+    else if(lightIndex == 7) {
+        fragPosLightSpace = lightSpaceMatrix7 * vec4(fragPos, 1.0);
+        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+        projCoords = projCoords * 0.5 + 0.5;
+        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
+        closestDepth = texture(shadowMap7, projCoords.xy).r;
+        currentDepth = projCoords.z;
+        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
     }
     
     return 0.0;
@@ -111,7 +127,7 @@ void main()
     float Specular = texture(gAlbedoSpec, TexCoord).a;
     
     float ssao = texture(ssaoTexture, TexCoord).r;
-    vec3 lighting = vec3(0.0); // No ambient light - pure darkness when no lights
+    vec3 lighting = Diffuse * 0.05; // Very subtle ambient to see shadows
     vec3 viewDir = normalize(viewPos - FragPos);
     
     for(int i = 0; i < numLights; ++i)
@@ -131,12 +147,15 @@ void main()
             diffuse *= attenuation;
             specular *= attenuation;
             
-            // Calculate shadows for primary light (first candle or flashlight when active)
+            // Calculate shadows for all lights (up to 8 shadow maps)
             float shadow = 0.0;
-            if(i == 0 && numLights > 0) {
+            if(i < 8 && numLights > 0) {  // Support shadows for all 8 lights
                 shadow = ShadowCalculation(FragPos, i);
             }
-            lighting += (1.0 - shadow) * (diffuse + specular);
+            
+            // Apply shadows with better contrast for dramatic lighting
+            float shadowFactor = (1.0 - shadow);
+            lighting += shadowFactor * (diffuse + specular);
         }
     }
     

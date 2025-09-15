@@ -12,7 +12,7 @@ static PointLight lights[8];
 static int num_lights = 0;
 static int base_num_lights = 0; // No fixed tavern lights - flashlight only
 static int flashlight_active = 0;
-static float flashlight_distance = 0.2f; // Distance from camera
+static float flashlight_distance = 0.0f; // Distance from camera (in 0.5 increments)
 static float global_light_radius = 8.0f; // Adjustable radius for all lights
 static TextureManager texture_manager;
 
@@ -67,7 +67,12 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
   // Only adjust flashlight distance when F key is held and flashlight is active
   if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS && flashlight_active) {
     // Scroll up = move light forward, scroll down = move light backward
-    flashlight_distance += (float)yoffset * 0.5f;
+    // Use discrete 0.5 increments for easy return to 0
+    if (yoffset > 0) {
+      flashlight_distance += 0.5f; // Forward by 0.5
+    } else if (yoffset < 0) {
+      flashlight_distance -= 0.5f; // Backward by 0.5
+    }
 
     // Clamp distance to reasonable range
     if (flashlight_distance < -5.0f)
@@ -75,7 +80,7 @@ void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
     if (flashlight_distance > 10.0f)
       flashlight_distance = 10.0f; // Far into scene
 
-    printf("Flashlight distance: %.2f\n", flashlight_distance);
+    printf("Flashlight distance: %.1f\n", flashlight_distance);
   }
 }
 
@@ -333,7 +338,7 @@ void main_state_update(GLFWwindow *window, float delta_time,
         lights[base_num_lights] = (PointLight){
             .position = camera.position,
             .color = vec3(1.0f, 0.9f, 0.7f), // Warm white flashlight
-            .radius = 15.0f,                 // Strong light
+            .radius = 50.0f,                 // Very strong flashlight
             .shadowFBO = 0,
             .shadowCubeMap = 0};
 
@@ -392,6 +397,19 @@ void main_state_update(GLFWwindow *window, float delta_time,
     e_key_pressed = 1;
   } else {
     e_key_pressed = 0;
+  }
+
+  // Handle flashlight distance reset with R key
+  static int r_key_pressed = 0;
+  if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
+    if (!r_key_pressed && flashlight_active) {
+      // R key pressed - reset flashlight distance to 0
+      flashlight_distance = 0.0f;
+      printf("Flashlight distance reset to: %.1f\n", flashlight_distance);
+    }
+    r_key_pressed = 1;
+  } else {
+    r_key_pressed = 0;
   }
 
   // Update flashlight position to follow camera at controlled distance
@@ -873,11 +891,13 @@ void main_state_render(GLFWwindow *window, void *args) {
     active_shadow_lights = num_lights; // Include flashlight shadow when active
   }
 
-  // Bind shadow maps for all active lights (max 4)
-  const char* shadowMapUniforms[] = {"shadowMap0", "shadowMap1", "shadowMap2", "shadowMap3"};
-  const char* lightSpaceUniforms[] = {"lightSpaceMatrix0", "lightSpaceMatrix1", "lightSpaceMatrix2", "lightSpaceMatrix3"};
+  // Bind shadow maps for all active lights (max 8)
+  const char* shadowMapUniforms[] = {"shadowMap0", "shadowMap1", "shadowMap2", "shadowMap3", 
+                                     "shadowMap4", "shadowMap5", "shadowMap6", "shadowMap7"};
+  const char* lightSpaceUniforms[] = {"lightSpaceMatrix0", "lightSpaceMatrix1", "lightSpaceMatrix2", "lightSpaceMatrix3",
+                                      "lightSpaceMatrix4", "lightSpaceMatrix5", "lightSpaceMatrix6", "lightSpaceMatrix7"};
   
-  for (int i = 0; i < active_shadow_lights && i < 4; i++) {
+  for (int i = 0; i < active_shadow_lights && i < 8; i++) {
     // Bind shadow map texture
     glActiveTexture(GL_TEXTURE4 + i);
     glBindTexture(GL_TEXTURE_2D, lights[i].shadowCubeMap);

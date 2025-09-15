@@ -68,7 +68,8 @@ Complete post-processing effects chain (mandatory requirement):
 - **WASD** - Camera movement
 - **Mouse** - Look around
 - **F Key** - Toggle flashlight (primary light source)
-- **Scroll Wheel** - Adjust flashlight distance
+- **Scroll Wheel** - Adjust flashlight distance (0.5 increments)
+- **R Key** - Reset flashlight distance to 0
 - **Q/E Keys** - Adjust global light radius
 
 ### Build & Run
@@ -141,7 +142,8 @@ Kompletan lanac post-processing efekata (obavezni zahtev):
 - **WASD** - Kretanje kamere
 - **Miš** - Pogled naokolo
 - **F Taster** - Uključ/isključ lampu (primarni izvor svetla)
-- **Scroll Wheel** - Podesi distancu lampe
+- **Scroll Wheel** - Podesi distancu lampe (inkrementi od 0.5)
+- **R Taster** - Resetuj distancu lampe na 0
 - **Q/E Tasteri** - Podesi globalni radius svetala
 
 ### Prevođenje i Pokretanje
