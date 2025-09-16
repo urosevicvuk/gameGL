@@ -1,11 +1,16 @@
 # Prerequisites
 *.d
 
-# Object files
+# Object files (compiled, not 3D models)
 *.o
 *.ko
-*.obj
 *.elf
+
+# Allow 3D model .obj files but exclude compiled .obj files
+# (3D models are in res/models/, compiled objects would be in src/ or root)
+src/*.obj
+*.obj
+!res/models/**/*.obj
 
 # Linker output
 *.ilk
