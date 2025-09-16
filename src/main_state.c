@@ -12,8 +12,10 @@ static PointLight lights[8];
 static int num_lights = 0;
 static int base_num_lights = 0; // No fixed tavern lights - flashlight only
 static int flashlight_active = 0;
-static float flashlight_distance = 0.0f; // Distance from camera (in 0.5 increments)
+static float flashlight_distance =
+    0.0f; // Distance from camera (in 0.5 increments)
 static float global_light_radius = 8.0f; // Adjustable radius for all lights
+static int flashlight_only_shadows = 1; // Start with flashlight-only shadows
 static TextureManager texture_manager;
 
 static rafgl_meshPUN_t floor_mesh, wall_mesh, table_mesh;
@@ -59,7 +61,8 @@ typedef struct {
 static WallCandle wall_candles[3];
 static int num_wall_candles = 3; // Re-enable wall candles
 static TableCandle table_candles[3];
-static int num_table_candles = 3; // Re-enable table candles - they work correctly
+static int num_table_candles =
+    3; // Re-enable table candles - they work correctly
 static float animation_time = 0.0f;
 
 // Scroll wheel callback for flashlight distance control
@@ -219,9 +222,10 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   float table_positions[][2] = {{-3.0f, -1.5f}, {0.5f, -4.0f}, {3.5f, -2.0f}};
   for (int i = 0; i < num_table_candles; i++) {
     table_candles[i] = (TableCandle){
-        .base_position = vec3(table_positions[i][0], 1.4f,
-                              table_positions[i][1]), // Adjusted table surface height
-        .flame_offset = vec3(0.0f, 0.0f, 0.0f),       // Will be animated
+        .base_position =
+            vec3(table_positions[i][0], 1.4f,
+                 table_positions[i][1]),        // Adjusted table surface height
+        .flame_offset = vec3(0.0f, 0.0f, 0.0f), // Will be animated
         .intensity = 1.0f,
         .flicker_speed = 2.5f + i * 0.3f,
         .time_offset = i * 0.8f,
@@ -232,7 +236,7 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   // Wall candles - position lights at flame location (top of candle)
   for (int i = 0; i < num_wall_candles; i++) {
     vec3_t flame_pos = v3_add(wall_candles[i].position,
-                              vec3(0.0f, 0.15f, 0.0f)); // Above candle model
+                              vec3(0.10f, 1.0f, 0.10f)); // Above candle model
     lights[i] =
         (PointLight){.position = flame_pos,
                      .color = vec3(1.0f, 0.6f, 0.3f), // Warm candle light
@@ -247,7 +251,7 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   for (int i = 0; i < num_table_candles; i++) {
     vec3_t initial_flame_pos = v3_add(table_candles[i].base_position,
                                       vec3(0.0f, 0.12f, 0.0f)); // Above base
-    
+
     lights[num_wall_candles + i] =
         (PointLight){.position = initial_flame_pos,
                      .color = vec3(1.0f, 0.6f, 0.3f), // Warm candle light
@@ -364,13 +368,14 @@ void main_state_update(GLFWwindow *window, float delta_time,
   // Handle light radius adjustment with Q/E keys
   static int q_key_pressed = 0;
   static int e_key_pressed = 0;
-  
+
   if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
     if (!q_key_pressed) {
       // Q key pressed - decrease radius
       global_light_radius -= 1.0f;
-      if (global_light_radius < 1.0f) global_light_radius = 1.0f; // Min radius
-      
+      if (global_light_radius < 1.0f)
+        global_light_radius = 1.0f; // Min radius
+
       // Update all active lights
       for (int i = 0; i < base_num_lights; i++) {
         lights[i].radius = global_light_radius;
@@ -381,13 +386,14 @@ void main_state_update(GLFWwindow *window, float delta_time,
   } else {
     q_key_pressed = 0;
   }
-  
+
   if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
     if (!e_key_pressed) {
       // E key pressed - increase radius
       global_light_radius += 1.0f;
-      if (global_light_radius > 20.0f) global_light_radius = 20.0f; // Max radius
-      
+      if (global_light_radius > 20.0f)
+        global_light_radius = 20.0f; // Max radius
+
       // Update all active lights
       for (int i = 0; i < base_num_lights; i++) {
         lights[i].radius = global_light_radius;
@@ -397,6 +403,23 @@ void main_state_update(GLFWwindow *window, float delta_time,
     e_key_pressed = 1;
   } else {
     e_key_pressed = 0;
+  }
+
+  // Handle shadow mode toggle with TAB key
+  static int tab_key_pressed = 0;
+  if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS) {
+    if (!tab_key_pressed) {
+      // TAB key pressed - toggle shadow mode
+      flashlight_only_shadows = !flashlight_only_shadows;
+      if (flashlight_only_shadows) {
+        printf("Shadow Mode: FLASHLIGHT ONLY\n");
+      } else {
+        printf("Shadow Mode: ALL LIGHTS\n");
+      }
+    }
+    tab_key_pressed = 1;
+  } else {
+    tab_key_pressed = 0;
   }
 
   // Handle flashlight distance reset with R key
@@ -423,24 +446,24 @@ void main_state_update(GLFWwindow *window, float delta_time,
 void render_scene_geometry(GLuint shadow_program) {
   // Floor - at exact ground level for clean shadows
   mat4_t model = m4_translation(vec3(0.0f, 0.0f, 0.0f));
-  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                     GL_FALSE, (float *)model.m);
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
+                     (float *)model.m);
   glBindVertexArray(floor_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, floor_mesh.vertex_count);
 
   // Walls
   model = m4_mul(m4_translation(vec3(0.0f, 2.0f, -5.0f)),
                  m4_scaling(vec3(10.0f, 4.0f, 0.2f)));
-  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                     GL_FALSE, (float *)model.m);
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
+                     (float *)model.m);
   glBindVertexArray(cube_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
 
   // Bar table
   model = m4_mul(m4_translation(vec3(4.0f, 0.0f, 0.0f)),
                  m4_scaling(vec3(2.5f, 0.8f, 0.8f)));
-  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                     GL_FALSE, (float *)model.m);
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
+                     (float *)model.m);
   glBindVertexArray(bench_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, bench_mesh.vertex_count);
 
@@ -530,11 +553,11 @@ void render_scene_geometry(GLuint shadow_program) {
     glDrawArrays(GL_TRIANGLES, 0, candle_base_mesh.vertex_count);
 
     // Candle flame
-    vec3_t flame_pos = v3_add(candle->base_position,
-                             v3_add(candle->flame_offset,
-                                    vec3(0.0f, 0.12f, 0.0f)));
-    model = m4_mul(m4_translation(flame_pos),
-                   m4_scaling(vec3(0.2f, 0.4f, 0.2f)));
+    vec3_t flame_pos =
+        v3_add(candle->base_position,
+               v3_add(candle->flame_offset, vec3(0.0f, 0.12f, 0.0f)));
+    model =
+        m4_mul(m4_translation(flame_pos), m4_scaling(vec3(0.2f, 0.4f, 0.2f)));
     glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
     glBindVertexArray(candle_flame_mesh.vao_id);
@@ -553,7 +576,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   // Render cube map shadows for all active lights using omnidirectional system
   for (int shadow_light_index = 0; shadow_light_index < num_shadow_lights;
        shadow_light_index++) {
-    render_cube_shadow_map(&lights[shadow_light_index], shadow_program, render_scene_geometry);
+    render_cube_shadow_map(&lights[shadow_light_index], shadow_program,
+                           render_scene_geometry);
   }
 
   // Geometry pass - render to G-Buffer
@@ -713,7 +737,7 @@ void main_state_render(GLFWwindow *window, void *args) {
   glBindVertexArray(cube_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
 
-  // Render real barrel models around the tavern  
+  // Render real barrel models around the tavern
   // For now, keep using colors until we fix texture loading
   glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.6f,
               0.4f, 0.2f); // Brown barrel wood
@@ -826,18 +850,23 @@ void main_state_render(GLFWwindow *window, void *args) {
   }
 
   // Bind shadow maps for all active lights (max 8)
-  const char* shadowMapUniforms[] = {"shadowMap0", "shadowMap1", "shadowMap2", "shadowMap3", 
-                                     "shadowMap4", "shadowMap5", "shadowMap6", "shadowMap7"};
-  
+  const char *shadowMapUniforms[] = {"shadowMap0", "shadowMap1", "shadowMap2",
+                                     "shadowMap3", "shadowMap4", "shadowMap5",
+                                     "shadowMap6", "shadowMap7"};
+
   for (int i = 0; i < active_shadow_lights && i < 8; i++) {
     // Bind shadow cube map texture
     glActiveTexture(GL_TEXTURE4 + i);
     glBindTexture(GL_TEXTURE_CUBE_MAP, lights[i].shadowCubeMap);
-    glUniform1i(glGetUniformLocation(lighting_program, shadowMapUniforms[i]), 4 + i);
+    glUniform1i(glGetUniformLocation(lighting_program, shadowMapUniforms[i]),
+                4 + i);
   }
-  
+
   // Send far_plane uniform for cube map shadow calculations
   glUniform1f(glGetUniformLocation(lighting_program, "far_plane"), 25.0f);
+  
+  // Send shadow mode toggle
+  glUniform1i(glGetUniformLocation(lighting_program, "flashlightOnlyShadows"), flashlight_only_shadows);
 
   // Send lights to shader
   glUniform1i(glGetUniformLocation(lighting_program, "numLights"), num_lights);
@@ -948,68 +977,83 @@ void texture_manager_init(TextureManager *tm) {
   material_init(&tm->leather);
 
   // Load model-specific textures from their directories
-  
+
   // Wooden barrel textures
-  material_load_diffuse(&tm->wood_planks,
-                        "res/models/Wooden barrel with metal bands/texture_diffuse.png");
-  material_load_normal(&tm->wood_planks, 
-                       "res/models/Wooden barrel with metal bands/texture_normal.png");
+  material_load_diffuse(
+      &tm->wood_planks,
+      "res/models/Wooden barrel with metal bands/texture_diffuse.png");
+  material_load_normal(
+      &tm->wood_planks,
+      "res/models/Wooden barrel with metal bands/texture_normal.png");
   tm->wood_planks.roughness = 0.8f;
   tm->wood_planks.metallic = 0.0f;
 
   // Round table textures
-  material_load_diffuse(&tm->oak_table, 
-                        "res/models/Round wooden table with pedestal base/texture_diffuse.png");
-  material_load_normal(&tm->oak_table, 
-                       "res/models/Round wooden table with pedestal base/texture_normal.png");
+  material_load_diffuse(
+      &tm->oak_table,
+      "res/models/Round wooden table with pedestal base/texture_diffuse.png");
+  material_load_normal(
+      &tm->oak_table,
+      "res/models/Round wooden table with pedestal base/texture_normal.png");
   tm->oak_table.roughness = 0.6f;
   tm->oak_table.metallic = 0.0f;
 
-  // Bench textures  
-  material_load_diffuse(&tm->dark_wood, 
-                        "res/models/Wooden bench with panels/texture_diffuse.png");
-  material_load_normal(&tm->dark_wood, 
-                       "res/models/Wooden bench with panels/texture_normal.png");
+  // Bench textures
+  material_load_diffuse(
+      &tm->dark_wood,
+      "res/models/Wooden bench with panels/texture_diffuse.png");
+  material_load_normal(
+      &tm->dark_wood, "res/models/Wooden bench with panels/texture_normal.png");
   tm->dark_wood.roughness = 0.7f;
   tm->dark_wood.metallic = 0.0f;
 
   // Wall candle textures
-  material_load_diffuse(&tm->medieval_stone,
-                        "res/models/Wall-mounted candle with flame/texture_diffuse.png");
-  material_load_normal(&tm->medieval_stone,
-                       "res/models/Wall-mounted candle with flame/texture_normal.png");
+  material_load_diffuse(
+      &tm->medieval_stone,
+      "res/models/Wall-mounted candle with flame/texture_diffuse.png");
+  material_load_normal(
+      &tm->medieval_stone,
+      "res/models/Wall-mounted candle with flame/texture_normal.png");
   tm->medieval_stone.roughness = 0.9f;
   tm->medieval_stone.metallic = 0.0f;
 
   // Beer mug textures
-  material_load_diffuse(&tm->brick_wall, 
-                        "res/models/Wooden beer mug with foam/texture_diffuse.png");
-  material_load_normal(&tm->brick_wall, 
-                       "res/models/Wooden beer mug with foam/texture_normal.png");
+  material_load_diffuse(
+      &tm->brick_wall,
+      "res/models/Wooden beer mug with foam/texture_diffuse.png");
+  material_load_normal(
+      &tm->brick_wall,
+      "res/models/Wooden beer mug with foam/texture_normal.png");
   tm->brick_wall.roughness = 0.8f;
   tm->brick_wall.metallic = 0.0f;
 
   // Green bottle textures
-  material_load_diffuse(&tm->rusty_metal, 
-                        "res/models/Green bottle with cork stopper/texture_diffuse.png");
-  material_load_normal(&tm->rusty_metal, 
-                       "res/models/Green bottle with cork stopper/texture_normal.png");
+  material_load_diffuse(
+      &tm->rusty_metal,
+      "res/models/Green bottle with cork stopper/texture_diffuse.png");
+  material_load_normal(
+      &tm->rusty_metal,
+      "res/models/Green bottle with cork stopper/texture_normal.png");
   tm->rusty_metal.roughness = 0.1f;
   tm->rusty_metal.metallic = 0.0f;
 
   // Food plate textures
-  material_load_diffuse(&tm->ceramic, 
-                        "res/models/Plate with steak and drumstick/texture_diffuse.png");
-  material_load_normal(&tm->ceramic, 
-                       "res/models/Plate with steak and drumstick/texture_normal.png");
+  material_load_diffuse(
+      &tm->ceramic,
+      "res/models/Plate with steak and drumstick/texture_diffuse.png");
+  material_load_normal(
+      &tm->ceramic,
+      "res/models/Plate with steak and drumstick/texture_normal.png");
   tm->ceramic.roughness = 0.2f;
   tm->ceramic.metallic = 0.0f;
 
   // Wooden stool textures
-  material_load_diffuse(&tm->leather, 
-                        "res/models/Wooden stool with ocagonal seat/texture_diffuse.png");
-  material_load_normal(&tm->leather, 
-                       "res/models/Wooden stool with ocagonal seat/texture_normal.png");
+  material_load_diffuse(
+      &tm->leather,
+      "res/models/Wooden stool with ocagonal seat/texture_diffuse.png");
+  material_load_normal(
+      &tm->leather,
+      "res/models/Wooden stool with ocagonal seat/texture_normal.png");
   tm->leather.roughness = 0.6f;
   tm->leather.metallic = 0.0f;
 

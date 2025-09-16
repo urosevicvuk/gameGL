@@ -27,6 +27,7 @@ uniform samplerCube shadowMap7;
 uniform int numLights;
 uniform vec3 viewPos;
 uniform float far_plane;
+uniform int flashlightOnlyShadows;
 
 float ShadowCalculation(vec3 fragPos, int lightIndex)
 {
@@ -36,7 +37,7 @@ float ShadowCalculation(vec3 fragPos, int lightIndex)
     // Get distance to fragment (normalize to [0,1] range)
     float currentDepth = length(lightToFrag) / far_plane;
     
-    // Sample cube map based on light index (REVERT: only 0-3 for now)
+    // Sample cube map based on light index (support 0-7)
     float closestDepth;
     if(lightIndex == 0) {
         closestDepth = texture(shadowMap0, lightToFrag).r;
@@ -46,8 +47,14 @@ float ShadowCalculation(vec3 fragPos, int lightIndex)
         closestDepth = texture(shadowMap2, lightToFrag).r;
     } else if(lightIndex == 3) {
         closestDepth = texture(shadowMap3, lightToFrag).r;
+    } else if(lightIndex == 4) {
+        closestDepth = texture(shadowMap4, lightToFrag).r;
+    } else if(lightIndex == 5) {
+        closestDepth = texture(shadowMap5, lightToFrag).r;
+    } else if(lightIndex == 6) {
+        closestDepth = texture(shadowMap6, lightToFrag).r;  // FLASHLIGHT!
     } else {
-        return 0.0; // No shadow maps for lights beyond index 3
+        return 0.0; // No shadow maps for lights beyond index 6 (only 7 lights total)
     }
     
     // FIX SHADOW OVERFLOW: Conservative shadow test
@@ -87,10 +94,18 @@ void main()
             diffuse *= attenuation;
             specular *= attenuation;
             
-            // Test shadows for the current light
+            // Shadow rendering based on mode
             float shadow = 0.0;
-            if(i < 8 && numLights > 0) {
-                shadow = ShadowCalculation(FragPos, i);
+            if(flashlightOnlyShadows == 1) {
+                // FLASHLIGHT ONLY MODE: Only cast shadows from flashlight (index 6)
+                if(i == 6 && numLights > 6) { // Only flashlight shadows
+                    shadow = ShadowCalculation(FragPos, i);
+                }
+            } else {
+                // ALL LIGHTS MODE: Cast shadows from all lights (0-6)
+                if(i < 7 && numLights > 0) {
+                    shadow = ShadowCalculation(FragPos, i);
+                }
             }
             
             // Apply shadows
