@@ -57,13 +57,13 @@ float ShadowCalculation(vec3 fragPos, int lightIndex)
         return 0.0; // No shadow maps for lights beyond index 6 (only 7 lights total)
     }
     
-    // FIX SHADOW OVERFLOW: Conservative shadow test
-    float bias = 0.05;
+    // Shadow bias to prevent shadow acne
+    float bias = 0.005;
     if(currentDepth > 1.0 || closestDepth > 1.0) {
         return 0.0; // Avoid overflow, no shadow
     }
     
-    return (currentDepth > closestDepth + bias) ? 0.3 : 0.0; // Light shadows
+    return (currentDepth > closestDepth + bias) ? 0.8 : 0.0; // Darker shadows
 }
 
 void main()

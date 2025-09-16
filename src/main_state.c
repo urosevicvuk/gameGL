@@ -10,12 +10,12 @@ static Camera camera;
 static GBuffer gbuffer;
 static PointLight lights[8];
 static int num_lights = 0;
-static int base_num_lights = 0; // No fixed tavern lights - flashlight only
+static int base_num_lights = 0; // Will be set to candle count during initialization
 static int flashlight_active = 0;
 static float flashlight_distance =
     0.0f; // Distance from camera (in 0.5 increments)
 static float global_light_radius = 8.0f; // Adjustable radius for all lights
-static int flashlight_only_shadows = 1; // Start with flashlight-only shadows
+static int flashlight_only_shadows = 1; // Only flashlight casts shadows
 static TextureManager texture_manager;
 
 static rafgl_meshPUN_t floor_mesh, wall_mesh, table_mesh;
@@ -64,6 +64,7 @@ static TableCandle table_candles[3];
 static int num_table_candles =
     3; // Re-enable table candles - they work correctly
 static float animation_time = 0.0f;
+static float startup_flashlight_timer = 0.0f;
 
 // Scroll wheel callback for flashlight distance control
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset) {
@@ -264,8 +265,23 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   num_lights = num_wall_candles + num_table_candles;
   base_num_lights = num_lights; // All candles are now base lights
 
+  printf("INITIALIZATION: %d candle lights created (%d wall + %d table)\n", 
+         num_lights, num_wall_candles, num_table_candles);
+
   // Initialize texture manager
   texture_manager_init(&texture_manager);
+
+  // Auto-activate flashlight at startup (so lights are visible immediately)
+  flashlight_active = 1;
+  lights[base_num_lights] = (PointLight){
+      .position = v3_add(camera.position, v3_muls(camera.front, flashlight_distance)),
+      .color = vec3(1.0f, 1.0f, 1.0f), // White flashlight
+      .radius = global_light_radius,
+      .shadowFBO = 0,
+      .shadowCubeMap = 0};
+  setup_point_light_shadows(&lights[base_num_lights], 512, 512);
+  num_lights = base_num_lights + 1;
+  // Flashlight auto-activated to initialize lighting
 
   glEnable(GL_DEPTH_TEST);
 }
@@ -276,6 +292,17 @@ void main_state_update(GLFWwindow *window, float delta_time,
 
   // Update animation time
   animation_time += delta_time;
+
+  // Auto-deactivate startup flashlight after brief delay
+  if (flashlight_active && startup_flashlight_timer >= 0.0f) {
+    startup_flashlight_timer += delta_time;
+    if (startup_flashlight_timer > 0.5f) { // 0.5 second delay
+      flashlight_active = 0;
+      num_lights = base_num_lights; // Back to just candle lights
+      startup_flashlight_timer = -1.0f; // Mark as completed
+      // Flashlight auto-deactivated, candle lights now visible
+    }
+  }
 
   // Animate wall candle lights only (no geometry movement)
   for (int i = 0; i < num_wall_candles; i++) {
