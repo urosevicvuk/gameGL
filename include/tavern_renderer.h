@@ -50,6 +50,7 @@ void fullscreen_quad_render(FullscreenQuad *quad);
 // Shadow mapping
 void setup_point_light_shadows(PointLight *light, int shadowWidth, int shadowHeight);
 void render_shadow_map(PointLight *light, rafgl_meshPUN_t *meshes, int meshCount, GLuint shadowProgram);
+void render_cube_shadow_map(PointLight *light, GLuint shadowProgram, void (*render_scene_func)(GLuint program));
 
 // SSAO
 typedef struct {

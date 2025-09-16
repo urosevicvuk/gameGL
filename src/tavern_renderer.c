@@ -156,19 +156,81 @@ void fullscreen_quad_render(FullscreenQuad *quad) {
 void setup_point_light_shadows(PointLight *light, int shadowWidth, int shadowHeight) {
     glGenFramebuffers(1, &light->shadowFBO);
     
-    glGenTextures(1, &light->shadowCubeMap);  // Reusing the name but it's actually a 2D texture
-    glBindTexture(GL_TEXTURE_2D, light->shadowCubeMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowWidth, shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    // Create a proper cube map texture for omnidirectional shadows
+    glGenTextures(1, &light->shadowCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadowCubeMap);
+    
+    // Create all 6 faces of the cube map
+    for (unsigned int i = 0; i < 6; ++i) {
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, 
+                     shadowWidth, shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    }
+    
+    // Set cube map parameters
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     
     glBindFramebuffer(GL_FRAMEBUFFER, light->shadowFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, light->shadowCubeMap, 0);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light->shadowCubeMap, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void render_cube_shadow_map(PointLight *light, GLuint shadowProgram, void (*render_scene_func)(GLuint program)) {
+    // The 6 view directions for a cube map (from a point light's perspective)
+    vec3_t directions[6] = {
+        vec3( 1.0f,  0.0f,  0.0f), // +X
+        vec3(-1.0f,  0.0f,  0.0f), // -X
+        vec3( 0.0f,  1.0f,  0.0f), // +Y
+        vec3( 0.0f, -1.0f,  0.0f), // -Y
+        vec3( 0.0f,  0.0f,  1.0f), // +Z
+        vec3( 0.0f,  0.0f, -1.0f)  // -Z
+    };
+    
+    vec3_t ups[6] = {
+        vec3(0.0f, -1.0f,  0.0f), // +X
+        vec3(0.0f, -1.0f,  0.0f), // -X
+        vec3(0.0f,  0.0f,  1.0f), // +Y
+        vec3(0.0f,  0.0f, -1.0f), // -Y
+        vec3(0.0f, -1.0f,  0.0f), // +Z
+        vec3(0.0f, -1.0f,  0.0f)  // -Z
+    };
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, light->shadowFBO);
+    glViewport(0, 0, 512, 512);
+    
+    glUseProgram(shadowProgram);
+    
+    // Set up projection matrix for 90 degree FOV (cube faces)
+    mat4_t lightProjection = m4_perspective(90.0f, 1.0f, 0.1f, 25.0f);
+    glUniformMatrix4fv(glGetUniformLocation(shadowProgram, "lightProjection"), 1, GL_FALSE, (float*)lightProjection.m);
+    
+    // Pass light position to shader for distance calculation
+    glUniform3f(glGetUniformLocation(shadowProgram, "lightPos"), light->position.x, light->position.y, light->position.z);
+    glUniform1f(glGetUniformLocation(shadowProgram, "far_plane"), 25.0f);
+    
+    // Render to each face of the cube map
+    for (int face = 0; face < 6; ++face) {
+        // Calculate view matrix for this face
+        vec3_t target = v3_add(light->position, directions[face]);
+        mat4_t lightView = m4_look_at(light->position, target, ups[face]);
+        
+        // Attach the specific face of the cube map to the framebuffer
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 
+                              GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, light->shadowCubeMap, 0);
+        
+        glClear(GL_DEPTH_BUFFER_BIT);
+        
+        // Send view matrix to shader
+        glUniformMatrix4fv(glGetUniformLocation(shadowProgram, "lightView"), 1, GL_FALSE, (float*)lightView.m);
+        
+        // Render the scene for this face
+        render_scene_func(shadowProgram);
+    }
+    
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

@@ -16,107 +16,58 @@ struct Light {
 };
 
 uniform Light lights[8];
-uniform sampler2D shadowMap0;
-uniform sampler2D shadowMap1;
-uniform sampler2D shadowMap2;
-uniform sampler2D shadowMap3;
-uniform sampler2D shadowMap4;
-uniform sampler2D shadowMap5;
-uniform sampler2D shadowMap6;
-uniform sampler2D shadowMap7;
+uniform samplerCube shadowMap0;
+uniform samplerCube shadowMap1;
+uniform samplerCube shadowMap2;
+uniform samplerCube shadowMap3;
+uniform samplerCube shadowMap4;
+uniform samplerCube shadowMap5;
+uniform samplerCube shadowMap6;
+uniform samplerCube shadowMap7;
 uniform int numLights;
 uniform vec3 viewPos;
-uniform mat4 lightSpaceMatrix0;
-uniform mat4 lightSpaceMatrix1;
-uniform mat4 lightSpaceMatrix2;
-uniform mat4 lightSpaceMatrix3;
-uniform mat4 lightSpaceMatrix4;
-uniform mat4 lightSpaceMatrix5;
-uniform mat4 lightSpaceMatrix6;
-uniform mat4 lightSpaceMatrix7;
+uniform float far_plane;
 
 float ShadowCalculation(vec3 fragPos, int lightIndex)
 {
-    // Support shadows for all 8 lights
-    vec4 fragPosLightSpace;
-    vec3 projCoords;
-    float closestDepth, currentDepth;
-    float bias = 0.001;
+    // Calculate vector from light to fragment for cube map sampling
+    vec3 lightToFrag = fragPos - lights[lightIndex].Position;
     
+    // Get distance to fragment (normalize to [0,1] range)
+    float currentDepth = length(lightToFrag) / far_plane;
+    
+    // Sample cube map based on light index using light-to-fragment direction
+    float closestDepth;
     if(lightIndex == 0) {
-        fragPosLightSpace = lightSpaceMatrix0 * vec4(fragPos, 1.0);
-        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords = projCoords * 0.5 + 0.5;
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
-        closestDepth = texture(shadowMap0, projCoords.xy).r;
-        currentDepth = projCoords.z;
-        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
-    }
-    else if(lightIndex == 1) {
-        fragPosLightSpace = lightSpaceMatrix1 * vec4(fragPos, 1.0);
-        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords = projCoords * 0.5 + 0.5;
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
-        closestDepth = texture(shadowMap1, projCoords.xy).r;
-        currentDepth = projCoords.z;
-        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
-    }
-    else if(lightIndex == 2) {
-        fragPosLightSpace = lightSpaceMatrix2 * vec4(fragPos, 1.0);
-        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords = projCoords * 0.5 + 0.5;
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
-        closestDepth = texture(shadowMap2, projCoords.xy).r;
-        currentDepth = projCoords.z;
-        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
-    }
-    else if(lightIndex == 3) {
-        fragPosLightSpace = lightSpaceMatrix3 * vec4(fragPos, 1.0);
-        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords = projCoords * 0.5 + 0.5;
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
-        closestDepth = texture(shadowMap3, projCoords.xy).r;
-        currentDepth = projCoords.z;
-        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
-    }
-    else if(lightIndex == 4) {
-        fragPosLightSpace = lightSpaceMatrix4 * vec4(fragPos, 1.0);
-        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords = projCoords * 0.5 + 0.5;
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
-        closestDepth = texture(shadowMap4, projCoords.xy).r;
-        currentDepth = projCoords.z;
-        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
-    }
-    else if(lightIndex == 5) {
-        fragPosLightSpace = lightSpaceMatrix5 * vec4(fragPos, 1.0);
-        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords = projCoords * 0.5 + 0.5;
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
-        closestDepth = texture(shadowMap5, projCoords.xy).r;
-        currentDepth = projCoords.z;
-        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
-    }
-    else if(lightIndex == 6) {
-        fragPosLightSpace = lightSpaceMatrix6 * vec4(fragPos, 1.0);
-        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords = projCoords * 0.5 + 0.5;
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
-        closestDepth = texture(shadowMap6, projCoords.xy).r;
-        currentDepth = projCoords.z;
-        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
-    }
-    else if(lightIndex == 7) {
-        fragPosLightSpace = lightSpaceMatrix7 * vec4(fragPos, 1.0);
-        projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-        projCoords = projCoords * 0.5 + 0.5;
-        if(projCoords.x < 0.0 || projCoords.x > 1.0 || projCoords.y < 0.0 || projCoords.y > 1.0 || projCoords.z > 1.0) return 0.0;
-        closestDepth = texture(shadowMap7, projCoords.xy).r;
-        currentDepth = projCoords.z;
-        return currentDepth - bias > closestDepth ? 0.95 : 0.0;
+        closestDepth = texture(shadowMap0, lightToFrag).r;
+    } else if(lightIndex == 1) {
+        closestDepth = texture(shadowMap1, lightToFrag).r;
+    } else if(lightIndex == 2) {
+        closestDepth = texture(shadowMap2, lightToFrag).r;
+    } else if(lightIndex == 3) {
+        closestDepth = texture(shadowMap3, lightToFrag).r;
+    } else if(lightIndex == 4) {
+        closestDepth = texture(shadowMap4, lightToFrag).r;
+    } else if(lightIndex == 5) {
+        closestDepth = texture(shadowMap5, lightToFrag).r;
+    } else if(lightIndex == 6) {
+        closestDepth = texture(shadowMap6, lightToFrag).r;
+    } else if(lightIndex == 7) {
+        closestDepth = texture(shadowMap7, lightToFrag).r;
+    } else {
+        return 0.0;
     }
     
-    return 0.0;
+    // More lenient shadow test - if cube map sampling failed, don't shadow
+    if(closestDepth <= 0.0) {
+        return 0.0; // No shadow if invalid depth
+    }
+    
+    // Bias to prevent shadow acne, but more generous
+    float bias = 0.01;
+    
+    // Compare depths and return shadow value
+    return (currentDepth - bias > closestDepth) ? 0.5 : 0.0; // Lighter shadows for testing
 }
 
 void main()
@@ -149,9 +100,10 @@ void main()
             
             // Calculate shadows for all lights (up to 8 shadow maps)
             float shadow = 0.0;
-            if(i < 8 && numLights > 0) {  // Support shadows for all 8 lights
-                shadow = ShadowCalculation(FragPos, i);
-            }
+            // TEMPORARILY DISABLE SHADOWS FOR DEBUGGING
+            // if(i < 8 && numLights > 0) {  // Support shadows for all 8 lights
+            //     shadow = ShadowCalculation(FragPos, i);
+            // }
             
             // Apply shadows with better contrast for dramatic lighting
             float shadowFactor = (1.0 - shadow);

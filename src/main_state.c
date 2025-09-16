@@ -419,6 +419,129 @@ void main_state_update(GLFWwindow *window, float delta_time,
   }
 }
 
+// Render all scene geometry for shadows
+void render_scene_geometry(GLuint shadow_program) {
+  // Floor - at exact ground level for clean shadows
+  mat4_t model = m4_translation(vec3(0.0f, 0.0f, 0.0f));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(floor_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, floor_mesh.vertex_count);
+
+  // Walls
+  model = m4_mul(m4_translation(vec3(0.0f, 2.0f, -5.0f)),
+                 m4_scaling(vec3(10.0f, 4.0f, 0.2f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  // Bar table
+  model = m4_mul(m4_translation(vec3(4.0f, 0.0f, 0.0f)),
+                 m4_scaling(vec3(2.5f, 0.8f, 0.8f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(bench_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, bench_mesh.vertex_count);
+
+  // Beer mugs on bar
+  for (int i = 0; i < 4; i++) {
+    float bar_x = 3.0f + (i * 0.5f) - 1.0f;
+    model = m4_mul(m4_translation(vec3(bar_x, 0.65f, 0.0f)),
+                   m4_scaling(vec3(0.12f, 0.12f, 0.12f)));
+    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                       GL_FALSE, (float *)model.m);
+    glBindVertexArray(beer_mug_mesh.vao_id);
+    glDrawArrays(GL_TRIANGLES, 0, beer_mug_mesh.vertex_count);
+  }
+
+  // Bottles on bar
+  for (int i = 0; i < 2; i++) {
+    float bottle_x = 4.5f + (i * 0.8f) - 0.4f;
+    model = m4_mul(m4_translation(vec3(bottle_x, 0.65f, -0.2f)),
+                   m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
+    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                       GL_FALSE, (float *)model.m);
+    glBindVertexArray(green_bottle_mesh.vao_id);
+    glDrawArrays(GL_TRIANGLES, 0, green_bottle_mesh.vertex_count);
+  }
+
+  // 3 dining tables with stools
+  float table_positions[][2] = {{-3.0f, -1.5f}, {0.5f, -4.0f}, {3.5f, -2.0f}};
+  for (int i = 0; i < 3; i++) {
+    // Round table
+    model = m4_mul(m4_translation(vec3(table_positions[i][0], 0.0f,
+                                       table_positions[i][1])),
+                   m4_scaling(vec3(0.7f, 0.7f, 0.7f)));
+    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                       GL_FALSE, (float *)model.m);
+    glBindVertexArray(table_round_mesh.vao_id);
+    glDrawArrays(GL_TRIANGLES, 0, table_round_mesh.vertex_count);
+
+    // 3 octagonal stools around each table
+    for (int stool = 0; stool < 3; stool++) {
+      float angle = stool * (2.0f * M_PIf / 3.0f);
+      float stool_x = table_positions[i][0] + cosf(angle) * 1.5f;
+      float stool_z = table_positions[i][1] + sinf(angle) * 1.5f;
+
+      model = m4_mul(m4_translation(vec3(stool_x, 0.0f, stool_z)),
+                     m4_scaling(vec3(0.4f, 0.4f, 0.4f)));
+      glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                         GL_FALSE, (float *)model.m);
+      glBindVertexArray(stool_mesh.vao_id);
+      glDrawArrays(GL_TRIANGLES, 0, stool_mesh.vertex_count);
+    }
+  }
+
+  // Barrels
+  float barrel_positions[][2] = {
+      {5.0f, 2.0f}, {-5.0f, 1.5f}, {3.0f, -3.0f}, {-2.0f, -4.0f}};
+  for (int i = 0; i < 4; i++) {
+    model = m4_mul(m4_translation(vec3(barrel_positions[i][0], 0.0f,
+                                       barrel_positions[i][1])),
+                   m4_scaling(vec3(0.8f, 0.8f, 0.8f)));
+    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                       GL_FALSE, (float *)model.m);
+    glBindVertexArray(barrel_mesh.vao_id);
+    glDrawArrays(GL_TRIANGLES, 0, barrel_mesh.vertex_count);
+  }
+
+  // Wall candles
+  for (int i = 0; i < num_wall_candles; i++) {
+    WallCandle *candle = &wall_candles[i];
+    model = m4_mul(m4_translation(candle->position),
+                   m4_scaling(vec3(0.4f, 0.4f, 0.4f)));
+    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                       GL_FALSE, (float *)model.m);
+    glBindVertexArray(wall_candle_mesh.vao_id);
+    glDrawArrays(GL_TRIANGLES, 0, wall_candle_mesh.vertex_count);
+  }
+
+  // Table candles
+  for (int i = 0; i < num_table_candles; i++) {
+    TableCandle *candle = &table_candles[i];
+
+    // Candle base
+    model = m4_mul(m4_translation(candle->base_position),
+                   m4_scaling(vec3(0.3f, 0.8f, 0.3f)));
+    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                       GL_FALSE, (float *)model.m);
+    glBindVertexArray(candle_base_mesh.vao_id);
+    glDrawArrays(GL_TRIANGLES, 0, candle_base_mesh.vertex_count);
+
+    // Candle flame
+    vec3_t flame_pos = v3_add(candle->base_position,
+                             v3_add(candle->flame_offset,
+                                    vec3(0.0f, 0.12f, 0.0f)));
+    model = m4_mul(m4_translation(flame_pos),
+                   m4_scaling(vec3(0.2f, 0.4f, 0.2f)));
+    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                       GL_FALSE, (float *)model.m);
+    glBindVertexArray(candle_flame_mesh.vao_id);
+    glDrawArrays(GL_TRIANGLES, 0, candle_flame_mesh.vertex_count);
+  }
+}
+
 void main_state_render(GLFWwindow *window, void *args) {
   // Shadow pass - render depth from active lights (candles + flashlight if
   // active)
@@ -427,200 +550,11 @@ void main_state_render(GLFWwindow *window, void *args) {
     num_shadow_lights = num_lights; // Include flashlight if active
   }
 
-  // Render shadows for all active lights (candles always, flashlight when
-  // active)
+  // Render cube map shadows for all active lights using omnidirectional system
   for (int shadow_light_index = 0; shadow_light_index < num_shadow_lights;
        shadow_light_index++) {
-    glBindFramebuffer(GL_FRAMEBUFFER, lights[shadow_light_index].shadowFBO);
-    glViewport(0, 0, 512, 512);
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-    glUseProgram(shadow_program);
-    mat4_t lightProjection = m4_perspective(
-        60.0f, 1.0f, 0.1f, 25.0f); // Increased range for flashlight
-
-    vec3_t lightTarget;
-    if (flashlight_active && shadow_light_index == base_num_lights) {
-      // This is the flashlight - points in camera direction
-      lightTarget = v3_add(lights[shadow_light_index].position, camera.front);
-    } else {
-      // This is a candle light - looks DOWN from its position
-      lightTarget = vec3(lights[shadow_light_index].position.x,
-                         lights[shadow_light_index].position.y - 2.0f,
-                         lights[shadow_light_index].position.z);
-    }
-
-    mat4_t lightView = m4_look_at(lights[shadow_light_index].position,
-                                  lightTarget, vec3(0.0f, 1.0f, 0.0f));
-    mat4_t lightSpaceMatrix = m4_mul(lightProjection, lightView);
-
-    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "lightSpaceMatrix"),
-                       1, GL_FALSE, (float *)lightSpaceMatrix.m);
-
-    // Render ALL scene geometry for shadows (must match main rendering)
-
-    // Floor - at exact ground level for clean shadows
-    mat4_t model = m4_translation(vec3(0.0f, 0.0f, 0.0f));
-    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                       GL_FALSE, (float *)model.m);
-    glBindVertexArray(floor_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, floor_mesh.vertex_count);
-
-    // Walls
-    model = m4_mul(m4_translation(vec3(0.0f, 2.0f, -5.0f)),
-                   m4_scaling(vec3(10.0f, 4.0f, 0.2f)));
-    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                       GL_FALSE, (float *)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-
-    // Bar table and dining tables (must match main rendering exactly)
-
-    // Bar table
-    model = m4_mul(m4_translation(vec3(4.0f, 0.0f, 0.0f)),
-                   m4_scaling(vec3(2.5f, 0.8f, 0.8f)));
-    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                       GL_FALSE, (float *)model.m);
-    glBindVertexArray(bench_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, bench_mesh.vertex_count);
-
-    // Beer mugs on bar
-    for (int i = 0; i < 4; i++) {
-      float bar_x = 3.0f + (i * 0.5f) - 1.0f;
-      model = m4_mul(m4_translation(vec3(bar_x, 0.65f, 0.0f)),
-                     m4_scaling(vec3(0.12f, 0.12f, 0.12f)));
-      glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                         GL_FALSE, (float *)model.m);
-      glBindVertexArray(beer_mug_mesh.vao_id);
-      glDrawArrays(GL_TRIANGLES, 0, beer_mug_mesh.vertex_count);
-    }
-
-    // Bottles on bar
-    for (int i = 0; i < 2; i++) {
-      float bottle_x = 4.5f + (i * 0.8f) - 0.4f;
-      model = m4_mul(m4_translation(vec3(bottle_x, 0.65f, -0.2f)),
-                     m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
-      glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                         GL_FALSE, (float *)model.m);
-      glBindVertexArray(green_bottle_mesh.vao_id);
-      glDrawArrays(GL_TRIANGLES, 0, green_bottle_mesh.vertex_count);
-    }
-
-    // 3 dining tables with stools (must match main rendering exactly)
-    float table_positions[][2] = {{-3.0f, -1.5f}, {0.5f, -4.0f}, {3.5f, -2.0f}};
-    for (int i = 0; i < 3; i++) {
-      // Round table
-      model = m4_mul(m4_translation(vec3(table_positions[i][0], 0.0f,
-                                         table_positions[i][1])),
-                     m4_scaling(vec3(0.7f, 0.7f, 0.7f)));
-      glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                         GL_FALSE, (float *)model.m);
-      glBindVertexArray(table_round_mesh.vao_id);
-      glDrawArrays(GL_TRIANGLES, 0, table_round_mesh.vertex_count);
-
-      // 3 octagonal stools around each table
-      for (int stool = 0; stool < 3; stool++) {
-        float angle = stool * (2.0f * M_PIf / 3.0f);
-        float stool_x = table_positions[i][0] + cosf(angle) * 1.5f;
-        float stool_z = table_positions[i][1] + sinf(angle) * 1.5f;
-
-        model = m4_mul(m4_translation(vec3(stool_x, 0.0f, stool_z)),
-                       m4_scaling(vec3(0.4f, 0.4f, 0.4f)));
-        glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                           GL_FALSE, (float *)model.m);
-        glBindVertexArray(stool_mesh.vao_id);
-        glDrawArrays(GL_TRIANGLES, 0, stool_mesh.vertex_count);
-      }
-    }
-
-    // Table items (selective)
-    // Table 0: beer mug only
-    model = m4_mul(m4_translation(vec3(table_positions[0][0], 0.6f,
-                                       table_positions[0][1])),
-                   m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
-    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                       GL_FALSE, (float *)model.m);
-    glBindVertexArray(beer_mug_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, beer_mug_mesh.vertex_count);
-
-    // Table 1: food plate and bottle
-    model = m4_mul(m4_translation(vec3(table_positions[1][0], 0.6f,
-                                       table_positions[1][1])),
-                   m4_scaling(vec3(0.15f, 0.15f, 0.15f)));
-    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                       GL_FALSE, (float *)model.m);
-    glBindVertexArray(food_plate_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, food_plate_mesh.vertex_count);
-
-    model = m4_mul(m4_translation(vec3(table_positions[1][0] + 0.3f, 0.6f,
-                                       table_positions[1][1] + 0.2f)),
-                   m4_scaling(vec3(0.08f, 0.08f, 0.08f)));
-    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                       GL_FALSE, (float *)model.m);
-    glBindVertexArray(green_bottle_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, green_bottle_mesh.vertex_count);
-
-    // Table 2: nothing (empty)
-
-    // Fireplace - moved to corner to avoid overlaps
-    model = m4_mul(m4_translation(vec3(4.5f, 1.0f, 4.0f)),
-                   m4_scaling(vec3(1.0f, 2.0f, 1.0f)));
-    glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                       GL_FALSE, (float *)model.m);
-    glBindVertexArray(cube_mesh.vao_id);
-    glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
-
-    // Real barrel models (must match main rendering exactly)
-    float barrel_positions[][2] = {
-        {5.0f, 2.0f}, {-5.0f, 1.5f}, {3.0f, -3.0f}, {-2.0f, -4.0f}};
-    for (int i = 0; i < 4; i++) {
-      model = m4_mul(m4_translation(vec3(barrel_positions[i][0], 0.0f,
-                                         barrel_positions[i][1])),
-                     m4_scaling(vec3(0.8f, 0.8f, 0.8f)));
-      glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                         GL_FALSE, (float *)model.m);
-      glBindVertexArray(barrel_mesh.vao_id);
-      glDrawArrays(GL_TRIANGLES, 0, barrel_mesh.vertex_count);
-    }
-
-    // Render wall candles (static .obj models)
-    for (int i = 0; i < num_wall_candles; i++) {
-      WallCandle *candle = &wall_candles[i];
-      model = m4_mul(m4_translation(candle->position),
-                     m4_scaling(vec3(0.4f, 0.4f, 0.4f)));
-      glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                         GL_FALSE, (float *)model.m);
-      glBindVertexArray(wall_candle_mesh.vao_id);
-      glDrawArrays(GL_TRIANGLES, 0, wall_candle_mesh.vertex_count);
-    }
-
-    // Render table candles (procedural with animated flames)
-    for (int i = 0; i < num_table_candles; i++) {
-      TableCandle *candle = &table_candles[i];
-
-      // Render candle base (parent - static, thin candle)
-      model = m4_mul(m4_translation(candle->base_position),
-                     m4_scaling(vec3(0.3f, 0.8f, 0.3f))); // Thin and tall
-      glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                         GL_FALSE, (float *)model.m);
-      glBindVertexArray(candle_base_mesh.vao_id);
-      glDrawArrays(GL_TRIANGLES, 0, candle_base_mesh.vertex_count);
-
-      // Render candle flame (child - animated position)
-      vec3_t flame_pos =
-          v3_add(candle->base_position,
-                 v3_add(candle->flame_offset,
-                        vec3(0.0f, 0.12f, 0.0f))); // Just above base
-      model = m4_mul(m4_translation(flame_pos),
-                     m4_scaling(vec3(0.2f, 0.4f, 0.2f))); // Small flame
-      glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
-                         GL_FALSE, (float *)model.m);
-      glBindVertexArray(candle_flame_mesh.vao_id);
-      glDrawArrays(GL_TRIANGLES, 0, candle_flame_mesh.vertex_count);
-    }
-
-    glViewport(0, 0, w, h);
-  } // End shadow light loop
+    render_cube_shadow_map(&lights[shadow_light_index], shadow_program, render_scene_geometry);
+  }
 
   // Geometry pass - render to G-Buffer
   gbuffer_bind_for_writing(&gbuffer);
@@ -894,34 +828,16 @@ void main_state_render(GLFWwindow *window, void *args) {
   // Bind shadow maps for all active lights (max 8)
   const char* shadowMapUniforms[] = {"shadowMap0", "shadowMap1", "shadowMap2", "shadowMap3", 
                                      "shadowMap4", "shadowMap5", "shadowMap6", "shadowMap7"};
-  const char* lightSpaceUniforms[] = {"lightSpaceMatrix0", "lightSpaceMatrix1", "lightSpaceMatrix2", "lightSpaceMatrix3",
-                                      "lightSpaceMatrix4", "lightSpaceMatrix5", "lightSpaceMatrix6", "lightSpaceMatrix7"};
   
   for (int i = 0; i < active_shadow_lights && i < 8; i++) {
-    // Bind shadow map texture
+    // Bind shadow cube map texture
     glActiveTexture(GL_TEXTURE4 + i);
-    glBindTexture(GL_TEXTURE_2D, lights[i].shadowCubeMap);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, lights[i].shadowCubeMap);
     glUniform1i(glGetUniformLocation(lighting_program, shadowMapUniforms[i]), 4 + i);
-
-    // Calculate light space matrix for this light
-    mat4_t lightProjection = m4_perspective(60.0f, 1.0f, 0.1f, 25.0f);
-
-    vec3_t lightTarget;
-    if (flashlight_active && i == base_num_lights) {
-      // This is the flashlight - points in camera direction
-      lightTarget = v3_add(lights[i].position, camera.front);
-    } else {
-      // This is a candle light - looks DOWN from its position
-      lightTarget = vec3(lights[i].position.x,
-                         lights[i].position.y - 2.0f,
-                         lights[i].position.z);
-    }
-
-    mat4_t lightView = m4_look_at(lights[i].position, lightTarget, vec3(0.0f, 1.0f, 0.0f));
-    mat4_t lightSpaceMatrix = m4_mul(lightProjection, lightView);
-    glUniformMatrix4fv(glGetUniformLocation(lighting_program, lightSpaceUniforms[i]), 1,
-                       GL_FALSE, (float *)lightSpaceMatrix.m);
   }
+  
+  // Send far_plane uniform for cube map shadow calculations
+  glUniform1f(glGetUniformLocation(lighting_program, "far_plane"), 25.0f);
 
   // Send lights to shader
   glUniform1i(glGetUniformLocation(lighting_program, "numLights"), num_lights);
