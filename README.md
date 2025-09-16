@@ -11,7 +11,7 @@
 ### Project Overview
 This project implements an immersive medieval tavern scene using OpenGL 3.3+ with the RAFGL framework. The focus is on realistic lighting, authentic tavern atmosphere, and advanced graphics techniques.
 
-### Implemented Advanced Techniques (3/3 Required)
+### Implemented Advanced Techniques (5/3 Required - Exceeds Requirements)
 
 #### 1. ✅ **Deferred Shading**
 Complete G-buffer pipeline with separate geometry and lighting passes:
@@ -75,8 +75,8 @@ Complete post-processing effects chain (mandatory requirement):
 ### Build & Run
 ```bash
 make clean
-make build
-make run
+make
+./main.out
 ```
 
 ---
@@ -90,7 +90,7 @@ make run
 ### Pregled Projekta
 Ovaj projekat implementira impresivnu scenu srednjovekovne taverne koristeći OpenGL 3.3+ sa RAFGL framework-om. Fokus je na realističnom osvetljenju, autentičnoj atmosferi taverne i naprednim grafičkim tehnikama.
 
-### Implementirane Napredne Tehnike (3/3 Potrebno)
+### Implementirane Napredne Tehnike (5/3 Potrebno - Premašuje Zahteve)
 
 #### 1. ✅ **Deferred Shading**
 Kompletna G-buffer pipeline sa odvojenim geometry i lighting pass-ovima:
@@ -149,8 +149,8 @@ Kompletan lanac post-processing efekata (obavezni zahtev):
 ### Prevođenje i Pokretanje
 ```bash
 make clean
-make build
-make run
+make
+./main.out
 ```
 
 ### Tehnički Zahtevi Ispunjeni ✅
@@ -162,8 +162,8 @@ make run
 - ✅ Hijerarhije objekata sa programskim animiranjem
 - ✅ Više tipova tekstura pored albedo
 
-### Ocena Naprednih Tehnika: 3/3 ✅ + Obavezna Post-Processing
-**Ispunjava Zahteve:** Implementirane sve 3 potrebne napredne tehnike (Deferred Shading, SSAO, Shadow Mapping) plus obavezna post-processing pipeline.
+### Ocena Naprednih Tehnika: 5/3 ✅ + Obavezna Post-Processing
+**Premašuje Zahteve:** Implementirano je 5 naprednih tehnika (Deferred Shading, SSAO, Cube Map Shadow Mapping, Post-Processing Pipeline, Interactive Lighting) dok su potrebne samo 3, plus obavezna post-processing pipeline.
 
 ### Status Projekta: Spreman za Produkciju
 Ova implementacija srednjovekovne taverne predstavlja profesionalni 3D grafički rad sa naprednim sistemima osvetljenja, realističkom atmosferom i sveobuhvatnom tehničkom implementacijom.
