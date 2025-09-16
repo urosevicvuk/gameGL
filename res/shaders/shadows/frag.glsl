@@ -5,6 +5,8 @@ in vec3 FragPos;
 uniform vec3 lightPos;
 uniform float far_plane;
 
+out float FragColor;
+
 void main()
 {
     // Calculate distance from light to fragment
@@ -13,6 +15,6 @@ void main()
     // Map to [0, 1] range by dividing by far_plane
     lightDistance = lightDistance / far_plane;
     
-    // Write distance as depth value
-    gl_FragDepth = lightDistance;
+    // Output distance as color value
+    FragColor = lightDistance;
 }

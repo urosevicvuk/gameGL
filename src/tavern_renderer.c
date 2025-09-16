@@ -160,10 +160,10 @@ void setup_point_light_shadows(PointLight *light, int shadowWidth, int shadowHei
     glGenTextures(1, &light->shadowCubeMap);
     glBindTexture(GL_TEXTURE_CUBE_MAP, light->shadowCubeMap);
     
-    // Create all 6 faces of the cube map
+    // Create all 6 faces of the cube map as color texture (not depth)
     for (unsigned int i = 0; i < 6; ++i) {
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, 
-                     shadowWidth, shadowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_R32F, 
+                     shadowWidth, shadowHeight, 0, GL_RED, GL_FLOAT, NULL);
     }
     
     // Set cube map parameters
@@ -174,8 +174,8 @@ void setup_point_light_shadows(PointLight *light, int shadowWidth, int shadowHei
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
     
     glBindFramebuffer(GL_FRAMEBUFFER, light->shadowFBO);
-    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, light->shadowCubeMap, 0);
-    glDrawBuffer(GL_NONE);
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, light->shadowCubeMap, 0);
+    glDrawBuffer(GL_COLOR_ATTACHMENT0);
     glReadBuffer(GL_NONE);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -220,10 +220,10 @@ void render_cube_shadow_map(PointLight *light, GLuint shadowProgram, void (*rend
         mat4_t lightView = m4_look_at(light->position, target, ups[face]);
         
         // Attach the specific face of the cube map to the framebuffer
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
                               GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, light->shadowCubeMap, 0);
         
-        glClear(GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
         
         // Send view matrix to shader
         glUniformMatrix4fv(glGetUniformLocation(shadowProgram, "lightView"), 1, GL_FALSE, (float*)lightView.m);

@@ -36,7 +36,7 @@ float ShadowCalculation(vec3 fragPos, int lightIndex)
     // Get distance to fragment (normalize to [0,1] range)
     float currentDepth = length(lightToFrag) / far_plane;
     
-    // Sample cube map based on light index using light-to-fragment direction
+    // Sample cube map based on light index (REVERT: only 0-3 for now)
     float closestDepth;
     if(lightIndex == 0) {
         closestDepth = texture(shadowMap0, lightToFrag).r;
@@ -46,28 +46,17 @@ float ShadowCalculation(vec3 fragPos, int lightIndex)
         closestDepth = texture(shadowMap2, lightToFrag).r;
     } else if(lightIndex == 3) {
         closestDepth = texture(shadowMap3, lightToFrag).r;
-    } else if(lightIndex == 4) {
-        closestDepth = texture(shadowMap4, lightToFrag).r;
-    } else if(lightIndex == 5) {
-        closestDepth = texture(shadowMap5, lightToFrag).r;
-    } else if(lightIndex == 6) {
-        closestDepth = texture(shadowMap6, lightToFrag).r;
-    } else if(lightIndex == 7) {
-        closestDepth = texture(shadowMap7, lightToFrag).r;
     } else {
-        return 0.0;
+        return 0.0; // No shadow maps for lights beyond index 3
     }
     
-    // More lenient shadow test - if cube map sampling failed, don't shadow
-    if(closestDepth <= 0.0) {
-        return 0.0; // No shadow if invalid depth
+    // FIX SHADOW OVERFLOW: Conservative shadow test
+    float bias = 0.05;
+    if(currentDepth > 1.0 || closestDepth > 1.0) {
+        return 0.0; // Avoid overflow, no shadow
     }
     
-    // Bias to prevent shadow acne, but more generous
-    float bias = 0.01;
-    
-    // Compare depths and return shadow value
-    return (currentDepth - bias > closestDepth) ? 0.5 : 0.0; // Lighter shadows for testing
+    return (currentDepth > closestDepth + bias) ? 0.3 : 0.0; // Light shadows
 }
 
 void main()
@@ -98,14 +87,13 @@ void main()
             diffuse *= attenuation;
             specular *= attenuation;
             
-            // Calculate shadows for all lights (up to 8 shadow maps)
+            // Test shadows for the current light
             float shadow = 0.0;
-            // TEMPORARILY DISABLE SHADOWS FOR DEBUGGING
-            // if(i < 8 && numLights > 0) {  // Support shadows for all 8 lights
-            //     shadow = ShadowCalculation(FragPos, i);
-            // }
+            if(i < 8 && numLights > 0) {
+                shadow = ShadowCalculation(FragPos, i);
+            }
             
-            // Apply shadows with better contrast for dramatic lighting
+            // Apply shadows
             float shadowFactor = (1.0 - shadow);
             lighting += shadowFactor * (diffuse + specular);
         }
