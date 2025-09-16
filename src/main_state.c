@@ -797,9 +797,10 @@ void main_state_render(GLFWwindow *window, void *args) {
   for (int i = 0; i < num_table_candles; i++) {
     TableCandle *candle = &table_candles[i];
 
-    // Render candle base (parent - static, warm wax color)
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.9f,
-                0.8f, 0.6f); // Candle wax
+    // Render candle base (parent - static, white wax color)
+    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.95f,
+                0.95f, 0.9f); // White candle wax
+    glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 0.0f);
     model = m4_mul(m4_translation(candle->base_position),
                    m4_scaling(vec3(0.3f, 0.8f, 0.3f))); // Thin and tall
     glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
@@ -810,6 +811,7 @@ void main_state_render(GLFWwindow *window, void *args) {
     // Render candle flame (child - animated position, bright orange)
     glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 1.0f,
                 0.7f, 0.2f); // Bright flame
+    glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 0.0f);
     vec3_t flame_pos =
         v3_add(candle->base_position,
                v3_add(candle->flame_offset,
