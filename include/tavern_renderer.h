@@ -75,15 +75,16 @@ typedef struct {
 } Material;
 
 typedef struct {
-    Material wood_planks;
-    Material oak_table;
-    Material dark_wood;
-    Material medieval_stone;
-    Material brick_wall;
-    Material iron_metal;
-    Material rusty_metal;
-    Material ceramic;
-    Material leather;
+    // Each object gets its own dedicated material
+    Material wooden_barrel;
+    Material round_table;
+    Material wooden_bench;
+    Material wall_candle;
+    Material beer_mug;
+    Material green_bottle;
+    Material food_plate;
+    Material wooden_stool;
+    Material floor_material;
 } TextureManager;
 
 // Material & texture functions

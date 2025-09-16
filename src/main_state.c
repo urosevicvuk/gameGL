@@ -644,9 +644,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
 
   // Create bar table (one big bench acting as bar)
-  glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.4f,
-              0.25f, 0.15f); // Bar wood
-  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 0.0f);
+  material_bind(&texture_manager.wooden_bench, gbuffer_program);
+  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   model = m4_mul(m4_translation(vec3(4.0f, 0.0f, 0.0f)),
                  m4_scaling(vec3(2.5f, 0.8f, 0.8f))); // Long bar table
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
@@ -655,9 +654,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   glDrawArrays(GL_TRIANGLES, 0, bench_mesh.vertex_count);
 
   // Create 3 round dining tables with better spacing
-  glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.5f,
-              0.3f, 0.2f); // Table wood
-  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 0.0f);
+  material_bind(&texture_manager.round_table, gbuffer_program);
+  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   float table_positions[][2] = {
       {-3.0f, -1.5f},
       {0.5f, -4.0f},
@@ -673,8 +671,8 @@ void main_state_render(GLFWwindow *window, void *args) {
     glDrawArrays(GL_TRIANGLES, 0, table_round_mesh.vertex_count);
 
     // 3 octagonal stools around each table with better spacing
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.7f,
-                0.5f, 0.3f); // Lighter stool wood
+    material_bind(&texture_manager.wooden_stool, gbuffer_program);
+    glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
     for (int stool = 0; stool < 3; stool++) {
       float angle = stool * (2.0f * M_PIf / 3.0f); // 120 degrees apart
       float stool_x = table_positions[i][0] +
@@ -688,14 +686,14 @@ void main_state_render(GLFWwindow *window, void *args) {
       glBindVertexArray(stool_mesh.vao_id);
       glDrawArrays(GL_TRIANGLES, 0, stool_mesh.vertex_count);
     }
-    // Reset color for next table
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.5f,
-                0.3f, 0.2f);
+    // Reset to table material for next table
+    material_bind(&texture_manager.round_table, gbuffer_program);
+    glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   }
 
   // Add beer mugs and bottles on the bar table
-  glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.8f,
-              0.6f, 0.4f);                  // Light wooden mug color
+  material_bind(&texture_manager.beer_mug, gbuffer_program);
+  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   for (int i = 0; i < 4; i++) {             // 4 beer mugs across the bar
     float bar_x = 3.0f + (i * 0.5f) - 1.0f; // Spread across bar length
     model = m4_mul(m4_translation(vec3(bar_x, 0.65f, 0.0f)),
@@ -707,8 +705,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   }
 
   // Add bottles on bar
-  glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.1f,
-              0.6f, 0.2f); // Brighter green glass
+  material_bind(&texture_manager.green_bottle, gbuffer_program);
+  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   for (int i = 0; i < 2; i++) {
     float bottle_x = 4.5f + (i * 0.8f) - 0.4f;
     model = m4_mul(m4_translation(vec3(bottle_x, 0.65f, -0.2f)),
@@ -721,8 +719,8 @@ void main_state_render(GLFWwindow *window, void *args) {
 
   // Add items on dining tables (selective)
   // Table 0: beer mug only
-  glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.8f,
-              0.6f, 0.4f);
+  material_bind(&texture_manager.beer_mug, gbuffer_program);
+  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   model = m4_mul(
       m4_translation(vec3(table_positions[0][0], 0.6f, table_positions[0][1])),
       m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
@@ -732,8 +730,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   glDrawArrays(GL_TRIANGLES, 0, beer_mug_mesh.vertex_count);
 
   // Table 1: food plate and bottle
-  glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.9f,
-              0.8f, 0.7f); // Light ceramic plate
+  material_bind(&texture_manager.food_plate, gbuffer_program);
+  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   model = m4_mul(
       m4_translation(vec3(table_positions[1][0], 0.6f, table_positions[1][1])),
       m4_scaling(vec3(0.15f, 0.15f, 0.15f)));
@@ -742,8 +740,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   glBindVertexArray(food_plate_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, food_plate_mesh.vertex_count);
 
-  glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.1f,
-              0.6f, 0.2f); // Brighter green bottle
+  material_bind(&texture_manager.green_bottle, gbuffer_program);
+  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   model = m4_mul(m4_translation(vec3(table_positions[1][0] + 0.3f, 0.6f,
                                      table_positions[1][1] + 0.2f)),
                  m4_scaling(vec3(0.08f, 0.08f, 0.08f)));
@@ -765,10 +763,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
 
   // Render real barrel models around the tavern
-  // For now, keep using colors until we fix texture loading
-  glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.6f,
-              0.4f, 0.2f); // Brown barrel wood
-  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 0.0f);
+  material_bind(&texture_manager.wooden_barrel, gbuffer_program);
+  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   float barrel_positions[][2] = {
       {5.0f, 2.0f}, {-5.0f, 1.5f}, {3.0f, -3.0f}, {-2.0f, -4.0f}};
   for (int i = 0; i < 4; i++) {
@@ -781,11 +777,10 @@ void main_state_render(GLFWwindow *window, void *args) {
     glDrawArrays(GL_TRIANGLES, 0, barrel_mesh.vertex_count);
   }
 
-  // Render wall candles (static .obj models on walls) - currently disabled
+  // Render wall candles (static .obj models on walls)
   if (num_wall_candles > 0) {
-    glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.8f,
-                0.7f, 0.5f); // Candle color
-    glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 0.0f);
+    material_bind(&texture_manager.wall_candle, gbuffer_program);
+    glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
     for (int i = 0; i < num_wall_candles; i++) {
       WallCandle *candle = &wall_candles[i];
       model = m4_mul(m4_translation(candle->position),
@@ -933,7 +928,10 @@ void material_init(Material *mat) {
 }
 
 void material_load_diffuse(Material *mat, const char *diffuse_path) {
-  if (rafgl_texture_load_basic(diffuse_path, &mat->diffuse) == 0) {
+  rafgl_raster_t raster;
+  if (rafgl_raster_load_from_image(&raster, diffuse_path) == 0) {
+    glGenTextures(1, &mat->diffuse.tex_id);
+    rafgl_texture_load_from_raster(&mat->diffuse, &raster);
     printf("Successfully loaded diffuse texture: %s\n", diffuse_path);
   } else {
     printf("Failed to load diffuse texture: %s\n", diffuse_path);
@@ -941,7 +939,10 @@ void material_load_diffuse(Material *mat, const char *diffuse_path) {
 }
 
 void material_load_normal(Material *mat, const char *normal_path) {
-  if (rafgl_texture_load_basic(normal_path, &mat->normal) == 0) {
+  rafgl_raster_t raster;
+  if (rafgl_raster_load_from_image(&raster, normal_path) == 0) {
+    glGenTextures(1, &mat->normal.tex_id);
+    rafgl_texture_load_from_raster(&mat->normal, &raster);
     mat->has_normal_map = 1;
     printf("Successfully loaded normal texture: %s\n", normal_path);
   } else {
@@ -951,7 +952,10 @@ void material_load_normal(Material *mat, const char *normal_path) {
 }
 
 void material_load_specular(Material *mat, const char *specular_path) {
-  if (rafgl_texture_load_basic(specular_path, &mat->specular) == 0) {
+  rafgl_raster_t raster;
+  if (rafgl_raster_load_from_image(&raster, specular_path) == 0) {
+    glGenTextures(1, &mat->specular.tex_id);
+    rafgl_texture_load_from_raster(&mat->specular, &raster);
     mat->has_specular_map = 1;
     printf("Successfully loaded specular texture: %s\n", specular_path);
   } else {
@@ -992,141 +996,87 @@ void material_bind(Material *mat, GLuint shader_program) {
 }
 
 void texture_manager_init(TextureManager *tm) {
-  // Initialize all materials
-  material_init(&tm->wood_planks);
-  material_init(&tm->oak_table);
-  material_init(&tm->dark_wood);
-  material_init(&tm->medieval_stone);
-  material_init(&tm->brick_wall);
-  material_init(&tm->iron_metal);
-  material_init(&tm->rusty_metal);
-  material_init(&tm->ceramic);
-  material_init(&tm->leather);
+  // Initialize all materials - each object gets its own dedicated material
+  material_init(&tm->wooden_barrel);
+  material_init(&tm->round_table);
+  material_init(&tm->wooden_bench);
+  material_init(&tm->wall_candle);
+  material_init(&tm->beer_mug);
+  material_init(&tm->green_bottle);
+  material_init(&tm->food_plate);
+  material_init(&tm->wooden_stool);
+  material_init(&tm->floor_material);
 
-  // Load model-specific textures from their directories
+  // Load EACH object's OWN specific textures
 
-  // Wooden barrel textures
-  material_load_diffuse(
-      &tm->wood_planks,
-      "res/models/Wooden barrel with metal bands/texture_diffuse.png");
-  material_load_normal(
-      &tm->wood_planks,
-      "res/models/Wooden barrel with metal bands/texture_normal.png");
-  tm->wood_planks.roughness = 0.8f;
-  tm->wood_planks.metallic = 0.0f;
+  // 1. Wooden barrel - uses SHADED texture with metal bands, wood, etc.
+  material_load_diffuse(&tm->wooden_barrel, "res/textures/wooden_barrel_shaded.png");
+  material_load_normal(&tm->wooden_barrel, "res/textures/wooden_barrel_normal.png");
+  tm->wooden_barrel.roughness = 0.8f;
+  tm->wooden_barrel.metallic = 0.0f;
 
-  // Round table textures
-  material_load_diffuse(
-      &tm->oak_table,
-      "res/models/Round wooden table with pedestal base/texture_diffuse.png");
-  material_load_normal(
-      &tm->oak_table,
-      "res/models/Round wooden table with pedestal base/texture_normal.png");
-  tm->oak_table.roughness = 0.6f;
-  tm->oak_table.metallic = 0.0f;
+  // 2. Round table - uses SHADED texture with full detail
+  material_load_diffuse(&tm->round_table, "res/textures/round_table_shaded.png");
+  material_load_normal(&tm->round_table, "res/textures/round_table_normal.png");
+  tm->round_table.roughness = 0.6f;
+  tm->round_table.metallic = 0.0f;
 
-  // Bench textures
-  material_load_diffuse(
-      &tm->dark_wood,
-      "res/models/Wooden bench with panels/texture_diffuse.png");
-  material_load_normal(
-      &tm->dark_wood, "res/models/Wooden bench with panels/texture_normal.png");
-  tm->dark_wood.roughness = 0.7f;
-  tm->dark_wood.metallic = 0.0f;
+  // 3. Wooden bench - uses SHADED texture with panels and details
+  material_load_diffuse(&tm->wooden_bench, "res/textures/wooden_bench_shaded.png");
+  material_load_normal(&tm->wooden_bench, "res/textures/wooden_bench_normal.png");
+  tm->wooden_bench.roughness = 0.7f;
+  tm->wooden_bench.metallic = 0.0f;
 
-  // Wall candle textures
-  material_load_diffuse(
-      &tm->medieval_stone,
-      "res/models/Wall-mounted candle with flame/texture_diffuse.png");
-  material_load_normal(
-      &tm->medieval_stone,
-      "res/models/Wall-mounted candle with flame/texture_normal.png");
-  tm->medieval_stone.roughness = 0.9f;
-  tm->medieval_stone.metallic = 0.0f;
+  // 4. Wall candle - uses SHADED texture with wax, holder, flame colors
+  material_load_diffuse(&tm->wall_candle, "res/textures/wall_candle_shaded.png");
+  material_load_normal(&tm->wall_candle, "res/textures/wall_candle_normal.png");
+  tm->wall_candle.roughness = 0.9f;
+  tm->wall_candle.metallic = 0.0f;
 
-  // Beer mug textures
-  material_load_diffuse(
-      &tm->brick_wall,
-      "res/models/Wooden beer mug with foam/texture_diffuse.png");
-  material_load_normal(
-      &tm->brick_wall,
-      "res/models/Wooden beer mug with foam/texture_normal.png");
-  tm->brick_wall.roughness = 0.8f;
-  tm->brick_wall.metallic = 0.0f;
+  // 5. Beer mug - uses its own beer mug textures (already working!)
+  material_load_diffuse(&tm->beer_mug, "res/textures/beer_mug_diffuse.png");
+  material_load_normal(&tm->beer_mug, "res/textures/beer_mug_normal.png");
+  tm->beer_mug.roughness = 0.8f;
+  tm->beer_mug.metallic = 0.0f;
 
-  // Green bottle textures
-  material_load_diffuse(
-      &tm->rusty_metal,
-      "res/models/Green bottle with cork stopper/texture_diffuse.png");
-  material_load_normal(
-      &tm->rusty_metal,
-      "res/models/Green bottle with cork stopper/texture_normal.png");
-  tm->rusty_metal.roughness = 0.1f;
-  tm->rusty_metal.metallic = 0.0f;
+  // 6. Green bottle - uses SHADED texture with glass and cork
+  material_load_diffuse(&tm->green_bottle, "res/textures/green_bottle_shaded.png");
+  material_load_normal(&tm->green_bottle, "res/textures/green_bottle_normal.png");
+  tm->green_bottle.roughness = 0.1f;
+  tm->green_bottle.metallic = 0.0f;
 
-  // Food plate textures
-  material_load_diffuse(
-      &tm->ceramic,
-      "res/models/Plate with steak and drumstick/texture_diffuse.png");
-  material_load_normal(
-      &tm->ceramic,
-      "res/models/Plate with steak and drumstick/texture_normal.png");
-  tm->ceramic.roughness = 0.2f;
-  tm->ceramic.metallic = 0.0f;
+  // 7. Food plate - uses SHADED texture with food and plate colors
+  material_load_diffuse(&tm->food_plate, "res/textures/food_plate_shaded.png");
+  material_load_normal(&tm->food_plate, "res/textures/food_plate_normal.png");
+  tm->food_plate.roughness = 0.2f;
+  tm->food_plate.metallic = 0.0f;
 
-  // Wooden stool textures
-  material_load_diffuse(
-      &tm->leather,
-      "res/models/Wooden stool with ocagonal seat/texture_diffuse.png");
-  material_load_normal(
-      &tm->leather,
-      "res/models/Wooden stool with ocagonal seat/texture_normal.png");
-  tm->leather.roughness = 0.6f;
-  tm->leather.metallic = 0.0f;
-
-  // Metal materials
-  material_load_diffuse(&tm->iron_metal, "res/textures/iron_metal_diffuse.png");
-  material_load_normal(&tm->iron_metal, "res/textures/iron_metal_normal.png");
-  tm->iron_metal.roughness = 0.3f;
-  tm->iron_metal.metallic = 0.9f;
-
-  material_load_diffuse(&tm->rusty_metal,
-                        "res/textures/rusty_metal_diffuse.png");
-  material_load_normal(&tm->rusty_metal, "res/textures/rusty_metal_normal.png");
-  tm->rusty_metal.roughness = 0.7f;
-  tm->rusty_metal.metallic = 0.6f;
-
-  // Other materials
-  material_load_diffuse(&tm->ceramic, "res/textures/ceramic_diffuse.png");
-  material_load_normal(&tm->ceramic, "res/textures/ceramic_normal.png");
-  tm->ceramic.roughness = 0.2f;
-  tm->ceramic.metallic = 0.0f;
-
-  material_load_diffuse(&tm->leather, "res/textures/leather_diffuse.png");
-  material_load_normal(&tm->leather, "res/textures/leather_normal.png");
-  tm->leather.roughness = 0.8f;
-  tm->leather.metallic = 0.0f;
+  // 8. Wooden stool - uses SHADED texture with full wood detail
+  material_load_diffuse(&tm->wooden_stool, "res/textures/wooden_stool_shaded.png");
+  material_load_normal(&tm->wooden_stool, "res/textures/wooden_stool_normal.png");
+  tm->wooden_stool.roughness = 0.6f;
+  tm->wooden_stool.metallic = 0.0f;
 }
 
 void texture_manager_cleanup(TextureManager *tm) {
-  rafgl_texture_cleanup(&tm->wood_planks.diffuse);
-  rafgl_texture_cleanup(&tm->wood_planks.normal);
-  rafgl_texture_cleanup(&tm->oak_table.diffuse);
-  rafgl_texture_cleanup(&tm->oak_table.normal);
-  rafgl_texture_cleanup(&tm->dark_wood.diffuse);
-  rafgl_texture_cleanup(&tm->dark_wood.normal);
-  rafgl_texture_cleanup(&tm->medieval_stone.diffuse);
-  rafgl_texture_cleanup(&tm->medieval_stone.normal);
-  rafgl_texture_cleanup(&tm->brick_wall.diffuse);
-  rafgl_texture_cleanup(&tm->brick_wall.normal);
-  rafgl_texture_cleanup(&tm->iron_metal.diffuse);
-  rafgl_texture_cleanup(&tm->iron_metal.normal);
-  rafgl_texture_cleanup(&tm->rusty_metal.diffuse);
-  rafgl_texture_cleanup(&tm->rusty_metal.normal);
-  rafgl_texture_cleanup(&tm->ceramic.diffuse);
-  rafgl_texture_cleanup(&tm->ceramic.normal);
-  rafgl_texture_cleanup(&tm->leather.diffuse);
-  rafgl_texture_cleanup(&tm->leather.normal);
+  rafgl_texture_cleanup(&tm->wooden_barrel.diffuse);
+  rafgl_texture_cleanup(&tm->wooden_barrel.normal);
+  rafgl_texture_cleanup(&tm->round_table.diffuse);
+  rafgl_texture_cleanup(&tm->round_table.normal);
+  rafgl_texture_cleanup(&tm->wooden_bench.diffuse);
+  rafgl_texture_cleanup(&tm->wooden_bench.normal);
+  rafgl_texture_cleanup(&tm->wall_candle.diffuse);
+  rafgl_texture_cleanup(&tm->wall_candle.normal);
+  rafgl_texture_cleanup(&tm->beer_mug.diffuse);
+  rafgl_texture_cleanup(&tm->beer_mug.normal);
+  rafgl_texture_cleanup(&tm->green_bottle.diffuse);
+  rafgl_texture_cleanup(&tm->green_bottle.normal);
+  rafgl_texture_cleanup(&tm->food_plate.diffuse);
+  rafgl_texture_cleanup(&tm->food_plate.normal);
+  rafgl_texture_cleanup(&tm->wooden_stool.diffuse);
+  rafgl_texture_cleanup(&tm->wooden_stool.normal);
+  rafgl_texture_cleanup(&tm->floor_material.diffuse);
+  rafgl_texture_cleanup(&tm->floor_material.normal);
 }
 
 // Simplified approach using existing RAFGL functions creatively
