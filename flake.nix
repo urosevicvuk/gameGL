@@ -35,6 +35,7 @@
                 packages =
                   with pkgs;
                   [
+                    # Development tools
                     clang-tools
                     cmake
                     codespell
@@ -45,6 +46,8 @@
                     lcov
                     vcpkg
                     vcpkg-tool
+                    pkg-config
+                    
                     # Graphics libraries for RAFGL
                     glfw-wayland
                     mesa
@@ -52,16 +55,18 @@
                     libGLU
                     libglvnd
                     libdecor
+                    
+                    # Wayland support
                     wayland
                     wayland-protocols
                     libxkbcommon
+                    
+                    # X11 libraries (needed by GLFW)
                     xorg.libX11
                     xorg.libXcursor
                     xorg.libXrandr
                     xorg.libXi
                     xorg.libXinerama
-                    # Build tools
-                    pkg-config
                   ]
                   ++ (if system == "aarch64-darwin" then [ ] else [ gdb ]);
 
@@ -75,6 +80,10 @@
                   export EGL_PLATFORM=wayland
                   export WAYLAND_DEBUG=0
                   export __EGL_VENDOR_LIBRARY_DIRS="${pkgs.mesa}/share/glvnd/egl_vendor.d"
+                  
+                  # Suppress GVFS/GLib version mismatch errors (cosmetic fix)
+                  # GVFS is not needed for OpenGL applications but gets loaded by the desktop environment
+                  export GIO_EXTRA_MODULES=""
                 '';
               };
         }
