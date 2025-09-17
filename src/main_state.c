@@ -238,11 +238,12 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   }
 
   // Create lights for all candles
-  // Wall candles - calculate light position based on candle position and wall orientation
+  // Wall candles - calculate light position based on candle position and wall
+  // orientation
   for (int i = 0; i < num_wall_candles; i++) {
     // Calculate light offset from wall surface toward room center
     vec3_t light_offset = vec3(0.0f, 0.15f, 0.0f); // Default: above candle
-    
+
     if (i == 0) {
       // Back wall candle - offset forward (positive Z) toward room
       light_offset = vec3(0.0f, 0.15f, 0.5f);
@@ -253,7 +254,7 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
       // Right wall candle - offset left (negative X) toward room
       light_offset = vec3(-0.5f, 0.15f, 0.0f);
     }
-    
+
     vec3_t flame_pos = v3_add(wall_candles[i].position, light_offset);
     lights[i] =
         (PointLight){.position = flame_pos,
@@ -339,7 +340,7 @@ void main_state_update(GLFWwindow *window, float delta_time,
 
     // Calculate light offset from wall surface toward room center
     vec3_t light_offset = vec3(0.0f, 0.15f, 0.0f); // Default: above candle
-    
+
     if (i == 0) {
       // Back wall candle - offset forward (positive Z) toward room
       light_offset = vec3(0.0f, 0.15f, 0.5f);
@@ -580,7 +581,7 @@ void render_scene_geometry(GLuint shadow_program) {
   // Bottles on bar counter
   for (int i = 0; i < 2; i++) {
     float bottle_x = 4.0f + (i * 0.8f) - 0.4f;
-    model = m4_mul(m4_translation(vec3(bottle_x, 0.62f, -1.8f)),
+    model = m4_mul(m4_translation(vec3(bottle_x, 0.95f, -1.8f)),
                    m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
     glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
@@ -847,7 +848,7 @@ void main_state_render(GLFWwindow *window, void *args) {
     float bottle_x = 4.0f + (i * 0.8f) - 0.4f; // Repositioned to bar center
     model = m4_mul(
         m4_translation(
-            vec3(bottle_x, 0.62f, -1.8f)), // Lowered by 0.3f, positioned on bar
+            vec3(bottle_x, 0.95f, -1.8f)), // Lowered by 0.3f, positioned on bar
         m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
     glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
@@ -859,9 +860,10 @@ void main_state_render(GLFWwindow *window, void *args) {
   // Table 0: beer mug only
   material_bind(&texture_manager.beer_mug, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
-  model = m4_mul(m4_translation(vec3(table_positions[0][0], 1.4f,
-                                     table_positions[0][1])), // Raised by 0.8f
-                 m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
+  model = m4_mul(
+      m4_translation(vec3(table_positions[0][0] + 0.3f, 1.35f,
+                          table_positions[0][1] + 0.2f)), // Raised by 0.8f
+      m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
   glBindVertexArray(beer_mug_mesh.vao_id);
@@ -870,9 +872,10 @@ void main_state_render(GLFWwindow *window, void *args) {
   // Table 1: food plate and bottle
   material_bind(&texture_manager.food_plate, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
-  model = m4_mul(m4_translation(vec3(table_positions[1][0], 1.4f,
-                                     table_positions[1][1])), // Raised by 0.8f
-                 m4_scaling(vec3(0.15f, 0.15f, 0.15f)));
+  model = m4_mul(
+      m4_translation(vec3(table_positions[1][0] - 0.3f, 1.35f,
+                          table_positions[1][1] - 0.2f)), // Raised by 0.8f
+      m4_scaling(vec3(0.15f, 0.15f, 0.15f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
   glBindVertexArray(food_plate_mesh.vao_id);
@@ -881,7 +884,7 @@ void main_state_render(GLFWwindow *window, void *args) {
   material_bind(&texture_manager.green_bottle, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   model = m4_mul(
-      m4_translation(vec3(table_positions[1][0] + 0.3f, 1.4f, // Raised by 0.8f
+      m4_translation(vec3(table_positions[1][0] + 0.3f, 1.33, // Raised by 0.8f
                           table_positions[1][1] + 0.2f)),
       m4_scaling(vec3(0.08f, 0.08f, 0.08f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
@@ -906,10 +909,7 @@ void main_state_render(GLFWwindow *window, void *args) {
   material_bind(&texture_manager.wooden_barrel, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   float barrel_positions[][2] = {
-      {4.5f, 4.0f},
-      {-4.5f, 4.0f},
-      {-4.5f, -1.0f},
-      {2.0f, 4.0f}}; // Repositioned, removed fireplace barrel
+      {4.5f, 4.0f}, {-4.5f, 4.0f}, {-4.5f, -2.0f}, {2.0f, 4.0f}};
   for (int i = 0; i < 4; i++) {
     model = m4_mul(m4_translation(vec3(barrel_positions[i][0], 0.0f,
                                        barrel_positions[i][1])),
