@@ -238,20 +238,23 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   }
 
   // Create lights for all candles
-  // Wall candles - position lights optimally for wall illumination (separate
-  // from visual position)
-  vec3_t optimal_light_positions[3] = {
-      vec3(0.0f, 1.95f,
-           -4.8f), // Back wall light - optimal distance for illumination
-      vec3(-4.8f, 1.65f,
-           2.0f), // Left wall light - optimal distance for illumination
-      vec3(4.8f, 1.65f,
-           -1.0f) // Right wall light - optimal distance for illumination
-  };
-
+  // Wall candles - calculate light position based on candle position and wall orientation
   for (int i = 0; i < num_wall_candles; i++) {
-    vec3_t flame_pos =
-        optimal_light_positions[i]; // Use optimal position for light
+    // Calculate light offset from wall surface toward room center
+    vec3_t light_offset = vec3(0.0f, 0.15f, 0.0f); // Default: above candle
+    
+    if (i == 0) {
+      // Back wall candle - offset forward (positive Z) toward room
+      light_offset = vec3(0.0f, 0.15f, 0.5f);
+    } else if (i == 1) {
+      // Left wall candle - offset right (positive X) toward room
+      light_offset = vec3(0.5f, 0.15f, 0.0f);
+    } else if (i == 2) {
+      // Right wall candle - offset left (negative X) toward room
+      light_offset = vec3(-0.5f, 0.15f, 0.0f);
+    }
+    
+    vec3_t flame_pos = v3_add(wall_candles[i].position, light_offset);
     lights[i] =
         (PointLight){.position = flame_pos,
                      .color = vec3(1.0f, 0.6f, 0.3f), // Warm candle light
@@ -329,21 +332,27 @@ void main_state_update(GLFWwindow *window, float delta_time,
     // Animate flame intensity (0.7 to 1.0 range for realistic flicker)
     candle->intensity = 0.85f + 0.15f * sinf(phase) * sinf(phase * 1.3f);
 
-    // Keep light position at optimal location (separate from visual candle
-    // position)
+    // Calculate light position based on candle position and wall orientation
     vec3_t flame_flicker =
         vec3(0.005f * sinf(phase * 2.1f), 0.01f * sinf(phase * 1.7f),
              0.005f * sinf(phase * 2.3f));
 
-    // Use optimal light positions for proper wall illumination
-    vec3_t optimal_light_positions[3] = {
-        vec3(0.0f, 1.95f, -4.8f), // Back wall light
-        vec3(-4.8f, 1.65f, 2.0f), // Left wall light
-        vec3(4.8f, 1.65f, -1.0f)  // Right wall light
-    };
+    // Calculate light offset from wall surface toward room center
+    vec3_t light_offset = vec3(0.0f, 0.15f, 0.0f); // Default: above candle
+    
+    if (i == 0) {
+      // Back wall candle - offset forward (positive Z) toward room
+      light_offset = vec3(0.0f, 0.15f, 0.5f);
+    } else if (i == 1) {
+      // Left wall candle - offset right (positive X) toward room
+      light_offset = vec3(0.5f, 0.15f, 0.0f);
+    } else if (i == 2) {
+      // Right wall candle - offset left (negative X) toward room
+      light_offset = vec3(-0.5f, 0.15f, 0.0f);
+    }
 
     lights[candle->light_index].position =
-        v3_add(optimal_light_positions[i], flame_flicker);
+        v3_add(candle->position, v3_add(light_offset, flame_flicker));
 
     // Update light color
     lights[candle->light_index].color =
