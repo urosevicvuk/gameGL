@@ -19,6 +19,9 @@ static float global_light_radius = 8.0f; // Adjustable radius for all lights
 static int flashlight_only_shadows = 1;  // Only flashlight casts shadows
 static TextureManager texture_manager;
 
+// Global table positions for use in both geometry and shadow passes
+static float table_positions[][2] = {{-3.5f, 1.0f}, {-1.0f, 3.5f}, {1.5f, 0.5f}};
+
 static rafgl_meshPUN_t floor_mesh;
 static GLuint gbuffer_program, lighting_program, shadow_program,
     postprocess_program, ssao_program;
@@ -590,7 +593,6 @@ void render_scene_geometry(GLuint shadow_program) {
   }
 
   // 3 dining tables with stools - repositioned
-  float table_positions[][2] = {{-3.5f, 1.0f}, {-1.0f, 3.5f}, {1.5f, 0.5f}};
   for (int i = 0; i < 3; i++) {
     // Round table
     model = m4_mul(m4_translation(vec3(table_positions[i][0], 0.0f,
@@ -685,6 +687,37 @@ void render_scene_geometry(GLuint shadow_program) {
     glBindVertexArray(candle_flame_mesh.vao_id);
     glDrawArrays(GL_TRIANGLES, 0, candle_flame_mesh.vertex_count);
   }
+
+  // Items on round tables (for shadow casting) - use global table_positions
+  // Table 0: beer mug
+  model = m4_mul(
+      m4_translation(vec3(table_positions[0][0] + 0.3f, 1.35f,
+                          table_positions[0][1] + 0.2f)),
+      m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(beer_mug_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, beer_mug_mesh.vertex_count);
+
+  // Table 1: food plate
+  model = m4_mul(
+      m4_translation(vec3(table_positions[1][0] - 0.3f, 1.35f,
+                          table_positions[1][1] - 0.2f)),
+      m4_scaling(vec3(0.15f, 0.15f, 0.15f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(food_plate_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, food_plate_mesh.vertex_count);
+
+  // Table 1: green bottle
+  model = m4_mul(
+      m4_translation(vec3(table_positions[1][0] + 0.3f, 1.33f,
+                          table_positions[1][1] + 0.2f)),
+      m4_scaling(vec3(0.08f, 0.08f, 0.08f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(green_bottle_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, green_bottle_mesh.vertex_count);
 }
 
 void main_state_render(GLFWwindow *window, void *args) {
@@ -794,9 +827,6 @@ void main_state_render(GLFWwindow *window, void *args) {
   // Create 3 round dining tables with repositioned layout
   material_bind(&texture_manager.round_table, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
-  float table_positions[][2] = {{-3.5f, 1.0f},
-                                {-1.0f, 3.5f},
-                                {1.5f, 0.5f}}; // x, z positions - repositioned
   for (int i = 0; i < 3; i++) {
     // Round table
     model = m4_mul(m4_translation(vec3(table_positions[i][0], 0.0f,
