@@ -19,9 +19,6 @@ static float global_light_radius = 8.0f; // Adjustable radius for all lights
 static int flashlight_only_shadows = 1;  // Only flashlight casts shadows
 static TextureManager texture_manager;
 
-// Global table positions for use in both geometry and shadow passes
-static float table_positions[][2] = {{-3.5f, 1.0f}, {-1.0f, 3.5f}, {1.5f, 0.5f}};
-
 static rafgl_meshPUN_t floor_mesh;
 static GLuint gbuffer_program, lighting_program, shadow_program,
     postprocess_program, ssao_program;
@@ -67,6 +64,18 @@ static int num_wall_candles = 3; // Re-enable wall candles
 static TableCandle table_candles[3];
 static int num_table_candles =
     3; // Re-enable table candles - they work correctly
+
+// Dining table and barrel objects - consistent with candle pattern
+typedef struct {
+  vec3_t position;
+} DiningTable;
+
+typedef struct {
+  vec3_t position;
+} Barrel;
+
+static DiningTable dining_tables[3];
+static Barrel barrels[4];
 static float animation_time = 0.0f;
 static float startup_flashlight_timer = 0.0f;
 
@@ -224,15 +233,25 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
       .time_offset = 2.0f,
       .light_index = 2};
 
+  // Initialize dining tables - consistent with candle pattern
+  dining_tables[0].position = vec3(-3.5f, 0.0f, 1.0f);
+  dining_tables[1].position = vec3(-1.0f, 0.0f, 3.5f);
+  dining_tables[2].position = vec3(1.5f, 0.0f, 0.5f);
+
+  // Initialize barrels - consistent with candle pattern
+  barrels[0].position = vec3(4.5f, 0.0f, 4.0f);
+  barrels[1].position = vec3(-4.5f, 0.0f, 4.0f);
+  barrels[2].position = vec3(-4.5f, 0.0f, -2.0f);
+  barrels[3].position = vec3(2.0f, 0.0f, 4.0f);
+
   // Initialize table candles - Object hierarchy with programmatic animation
   // Table model scaled by 0.7f, need to calculate actual table surface height
   // Assuming original table height ~2.0f, scaled = 1.4f surface height
-  float table_positions[][2] = {{-3.5f, 1.0f}, {-1.0f, 3.5f}, {1.5f, 0.5f}};
   for (int i = 0; i < num_table_candles; i++) {
     table_candles[i] = (TableCandle){
         .base_position =
-            vec3(table_positions[i][0], 1.4f,
-                 table_positions[i][1]),        // Adjusted table surface height
+            vec3(dining_tables[i].position.x, 1.4f,
+                 dining_tables[i].position.z),  // Use dining table positions
         .flame_offset = vec3(0.0f, 0.0f, 0.0f), // Will be animated
         .intensity = 1.0f,
         .flicker_speed = 2.5f + i * 0.3f,
@@ -595,8 +614,7 @@ void render_scene_geometry(GLuint shadow_program) {
   // 3 dining tables with stools - repositioned
   for (int i = 0; i < 3; i++) {
     // Round table
-    model = m4_mul(m4_translation(vec3(table_positions[i][0], 0.0f,
-                                       table_positions[i][1])),
+    model = m4_mul(m4_translation(dining_tables[i].position),
                    m4_scaling(vec3(0.7f, 0.7f, 0.7f)));
     glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
@@ -606,8 +624,8 @@ void render_scene_geometry(GLuint shadow_program) {
     // 3 octagonal stools around each table
     for (int stool = 0; stool < 3; stool++) {
       float angle = stool * (2.0f * M_PIf / 3.0f);
-      float stool_x = table_positions[i][0] + cosf(angle) * 1.5f;
-      float stool_z = table_positions[i][1] + sinf(angle) * 1.5f;
+      float stool_x = dining_tables[i].position.x + cosf(angle) * 1.5f;
+      float stool_z = dining_tables[i].position.z + sinf(angle) * 1.5f;
 
       model = m4_mul(m4_translation(vec3(stool_x, 0.0f, stool_z)),
                      m4_scaling(vec3(0.4f, 0.4f, 0.4f)));
@@ -619,11 +637,8 @@ void render_scene_geometry(GLuint shadow_program) {
   }
 
   // Barrels - repositioned, removed fireplace barrel
-  float barrel_positions[][2] = {
-      {4.5f, 4.0f}, {-4.5f, 4.0f}, {-4.5f, -1.0f}, {2.0f, 4.0f}};
   for (int i = 0; i < 4; i++) {
-    model = m4_mul(m4_translation(vec3(barrel_positions[i][0], 0.0f,
-                                       barrel_positions[i][1])),
+    model = m4_mul(m4_translation(barrels[i].position),
                    m4_scaling(vec3(0.8f, 0.8f, 0.8f)));
     glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
@@ -688,11 +703,11 @@ void render_scene_geometry(GLuint shadow_program) {
     glDrawArrays(GL_TRIANGLES, 0, candle_flame_mesh.vertex_count);
   }
 
-  // Items on round tables (for shadow casting) - use global table_positions
+  // Items on round tables (for shadow casting) - use dining table positions
   // Table 0: beer mug
   model = m4_mul(
-      m4_translation(vec3(table_positions[0][0] + 0.3f, 1.35f,
-                          table_positions[0][1] + 0.2f)),
+      m4_translation(vec3(dining_tables[0].position.x + 0.3f, 1.35f,
+                          dining_tables[0].position.z + 0.2f)),
       m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
   glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
@@ -701,8 +716,8 @@ void render_scene_geometry(GLuint shadow_program) {
 
   // Table 1: food plate
   model = m4_mul(
-      m4_translation(vec3(table_positions[1][0] - 0.3f, 1.35f,
-                          table_positions[1][1] - 0.2f)),
+      m4_translation(vec3(dining_tables[1].position.x - 0.3f, 1.35f,
+                          dining_tables[1].position.z - 0.2f)),
       m4_scaling(vec3(0.15f, 0.15f, 0.15f)));
   glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
@@ -711,8 +726,8 @@ void render_scene_geometry(GLuint shadow_program) {
 
   // Table 1: green bottle
   model = m4_mul(
-      m4_translation(vec3(table_positions[1][0] + 0.3f, 1.33f,
-                          table_positions[1][1] + 0.2f)),
+      m4_translation(vec3(dining_tables[1].position.x + 0.3f, 1.33f,
+                          dining_tables[1].position.z + 0.2f)),
       m4_scaling(vec3(0.08f, 0.08f, 0.08f)));
   glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
@@ -829,8 +844,7 @@ void main_state_render(GLFWwindow *window, void *args) {
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   for (int i = 0; i < 3; i++) {
     // Round table
-    model = m4_mul(m4_translation(vec3(table_positions[i][0], 0.0f,
-                                       table_positions[i][1])),
+    model = m4_mul(m4_translation(dining_tables[i].position),
                    m4_scaling(vec3(0.7f, 0.7f, 0.7f)));
     glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
@@ -842,9 +856,9 @@ void main_state_render(GLFWwindow *window, void *args) {
     glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
     for (int stool = 0; stool < 3; stool++) {
       float angle = stool * (2.0f * M_PIf / 3.0f); // 120 degrees apart
-      float stool_x = table_positions[i][0] +
+      float stool_x = dining_tables[i].position.x +
                       cosf(angle) * 1.5f; // Increased radius from 1.2f to 1.5f
-      float stool_z = table_positions[i][1] + sinf(angle) * 1.5f;
+      float stool_z = dining_tables[i].position.z + sinf(angle) * 1.5f;
 
       model = m4_mul(m4_translation(vec3(stool_x, 0.0f, stool_z)),
                      m4_scaling(vec3(0.4f, 0.4f, 0.4f)));
@@ -891,8 +905,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   material_bind(&texture_manager.beer_mug, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   model = m4_mul(
-      m4_translation(vec3(table_positions[0][0] + 0.3f, 1.35f,
-                          table_positions[0][1] + 0.2f)), // Raised by 0.8f
+      m4_translation(vec3(dining_tables[0].position.x + 0.3f, 1.35f,
+                          dining_tables[0].position.z + 0.2f)), // Raised by 0.8f
       m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
@@ -903,8 +917,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   material_bind(&texture_manager.food_plate, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   model = m4_mul(
-      m4_translation(vec3(table_positions[1][0] - 0.3f, 1.35f,
-                          table_positions[1][1] - 0.2f)), // Raised by 0.8f
+      m4_translation(vec3(dining_tables[1].position.x - 0.3f, 1.35f,
+                          dining_tables[1].position.z - 0.2f)), // Raised by 0.8f
       m4_scaling(vec3(0.15f, 0.15f, 0.15f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
@@ -914,8 +928,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   material_bind(&texture_manager.green_bottle, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   model = m4_mul(
-      m4_translation(vec3(table_positions[1][0] + 0.3f, 1.33, // Raised by 0.8f
-                          table_positions[1][1] + 0.2f)),
+      m4_translation(vec3(dining_tables[1].position.x + 0.3f, 1.33f, // Raised by 0.8f
+                          dining_tables[1].position.z + 0.2f)),
       m4_scaling(vec3(0.08f, 0.08f, 0.08f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
@@ -938,11 +952,8 @@ void main_state_render(GLFWwindow *window, void *args) {
   // Render real barrel models around the tavern - repositioned layout
   material_bind(&texture_manager.wooden_barrel, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
-  float barrel_positions[][2] = {
-      {4.5f, 4.0f}, {-4.5f, 4.0f}, {-4.5f, -2.0f}, {2.0f, 4.0f}};
   for (int i = 0; i < 4; i++) {
-    model = m4_mul(m4_translation(vec3(barrel_positions[i][0], 0.0f,
-                                       barrel_positions[i][1])),
+    model = m4_mul(m4_translation(barrels[i].position),
                    m4_scaling(vec3(0.8f, 0.8f, 0.8f)));
     glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
