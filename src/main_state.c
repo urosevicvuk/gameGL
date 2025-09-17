@@ -5,44 +5,44 @@
 
 #include <rafgl.h>
 
-// Game constants - eliminates magic numbers throughout code
+// Game constants
 #define STOOL_ANGLE_STEP (2.0f * M_PIf / 3.0f)  // 120 degrees between stools
-#define STOOL_RADIUS 1.5f                        // Distance from table center
-#define BEER_MUG_SCALE 0.12f                     // Scale for beer mugs
-#define GREEN_BOTTLE_SCALE 0.1f                  // Scale for bottles
-#define FOOD_PLATE_SCALE 0.15f                   // Scale for food plates
-#define WALL_HEIGHT 2.0f                         // Wall center height
-#define WALL_THICKNESS 0.2f                      // Wall thickness
-#define WALL_LENGTH 11.0f                        // Wall length
-#define TABLE_SURFACE_HEIGHT 1.4f                // Height of table surface
-#define TABLE_ITEM_HEIGHT 1.35f                  // Height for items on tables
-#define BAR_COUNTER_HEIGHT 0.95f                 // Height for items on bar
-#define CANDLE_FLAME_HEIGHT 0.15f                // Height above candle base
-#define LIGHT_OFFSET_DISTANCE 0.5f               // Distance lights offset from walls
+#define STOOL_RADIUS 1.5f
+#define BEER_MUG_SCALE 0.12f
+#define GREEN_BOTTLE_SCALE 0.1f
+#define FOOD_PLATE_SCALE 0.15f
+#define WALL_HEIGHT 2.0f
+#define WALL_THICKNESS 0.2f
+#define WALL_LENGTH 11.0f
+#define TABLE_SURFACE_HEIGHT 1.4f
+#define TABLE_ITEM_HEIGHT 1.35f
+#define BAR_COUNTER_HEIGHT 0.95f
+#define CANDLE_FLAME_HEIGHT 0.15f
+#define LIGHT_OFFSET_DISTANCE 0.5f
 
-// Animation constants - eliminate magic numbers for tunable parameters
-#define FLAME_INTENSITY_BASE 0.85f               // Base flame intensity
-#define FLAME_INTENSITY_VARIATION 0.15f          // Intensity variation range
-#define FLAME_FLICKER_SCALE_X 0.005f            // Horizontal flicker scale
-#define FLAME_FLICKER_SCALE_Y 0.01f             // Vertical flicker scale  
-#define FLAME_FLICKER_SCALE_Z 0.005f            // Depth flicker scale
-#define TABLE_FLAME_OFFSET_X 0.01f              // Table candle X wobble
-#define TABLE_FLAME_OFFSET_Y 0.02f              // Table candle Y wobble
-#define TABLE_FLAME_OFFSET_Z 0.01f              // Table candle Z wobble
+// Animation constants
+#define FLAME_INTENSITY_BASE 0.85f
+#define FLAME_INTENSITY_VARIATION 0.15f
+#define FLAME_FLICKER_SCALE_X 0.005f
+#define FLAME_FLICKER_SCALE_Y 0.01f
+#define FLAME_FLICKER_SCALE_Z 0.005f
+#define TABLE_FLAME_OFFSET_X 0.01f
+#define TABLE_FLAME_OFFSET_Y 0.02f
+#define TABLE_FLAME_OFFSET_Z 0.01f
 
 // Sine wave lookup table for performance optimization
 #define SINE_LUT_SIZE 1024                       // Power of 2 for fast indexing
 #define SINE_LUT_MASK (SINE_LUT_SIZE - 1)       // Bitmask for wraparound
-static float sine_lut[SINE_LUT_SIZE];           // Pre-calculated sine values
-static int sine_lut_initialized = 0;           // Initialization flag
+static float sine_lut[SINE_LUT_SIZE];
+static int sine_lut_initialized = 0;
 
-// Debug system - set to 0 for release builds
-#define DEBUG_LEVEL 0                           // 0=off, 1=important, 2=verbose
+// Debug system
+#define DEBUG_LEVEL 0
 #define DEBUG_PRINT(level, ...) do { if (DEBUG_LEVEL >= level) printf(__VA_ARGS__); } while(0)
 
 // Fast sine lookup function using linear interpolation
 static inline float fast_sin(float angle) {
-    // Normalize angle to [0, 2π] range and map to LUT index
+    // Normalize angle to [0, 2π] range
     float normalized = fmodf(angle, 2.0f * M_PIf);
     if (normalized < 0.0f) normalized += 2.0f * M_PIf;
     
@@ -50,7 +50,7 @@ static inline float fast_sin(float angle) {
     int index0 = (int)index_float & SINE_LUT_MASK;
     int index1 = (index0 + 1) & SINE_LUT_MASK;
     
-    // Linear interpolation between two closest LUT values
+    // Linear interpolation between lookup table values
     float frac = index_float - (int)index_float;
     return sine_lut[index0] + frac * (sine_lut[index1] - sine_lut[index0]);
 }
@@ -75,7 +75,7 @@ typedef struct {
   GLint lighting_lights_radius[8];
   GLint lighting_flashlightOnlyShadows;
   
-  // Material binding uniforms (eliminates 8 lookups per material bind)
+  // Material binding uniforms
   GLint material_texture_diffuse1, material_texture_normal1, material_texture_specular1;
   GLint material_hasNormalMap, material_hasTexture;
   GLint material_roughness, material_metallic;
@@ -83,30 +83,28 @@ typedef struct {
   // SSAO program uniforms
   GLint ssao_gPosition, ssao_gNormal, ssao_projection;
   
-  // Additional cached uniforms (eliminates remaining 18 runtime lookups)
-  GLint gbuffer_hasTexture_other;     // For shader_program != gbuffer_program
-  GLint gbuffer_materialColor_other;  // For shader_program != gbuffer_program  
-  GLint gbuffer_model_other;          // For non-gbuffer model uniform lookups
+  // Additional cached uniforms
+  GLint gbuffer_hasTexture_other;
+  GLint gbuffer_materialColor_other;
+  GLint gbuffer_model_other;
 } UniformLocations;
 
 static UniformLocations uniforms;
 
-// Key state management - moved from update function for performance
+// Key state management
 enum KeyIndex { KEY_F = 0, KEY_Q = 1, KEY_E = 2, KEY_TAB = 3, KEY_R = 4, MAX_KEYS = 5 };
-static int key_states[MAX_KEYS] = {0}; // All keys start unpressed
+static int key_states[MAX_KEYS] = {0};
 
 static int w, h;
 static Camera camera;
 static GBuffer gbuffer;
 static PointLight lights[8];
 static int num_lights = 0;
-static int base_num_lights =
-    0; // Will be set to candle count during initialization
+static int base_num_lights = 0;
 static int flashlight_active = 0;
-static float flashlight_distance =
-    0.0f; // Distance from camera (in 0.5 increments)
-static float global_light_radius = 8.0f; // Adjustable radius for all lights
-static int flashlight_only_shadows = 1;  // Only flashlight casts shadows
+static float flashlight_distance = 0.0f;
+static float global_light_radius = 8.0f;
+static int flashlight_only_shadows = 1;
 static TextureManager texture_manager;
 
 static rafgl_meshPUN_t floor_mesh;
@@ -120,33 +118,30 @@ static GLuint postprocessFBO, colorTexture;
 // SSAO
 static GLuint ssaoFBO, ssaoColorBuffer;
 
-// Tavern objects - loaded from .obj files
+// Tavern objects
 static rafgl_meshPUN_t barrel_mesh, table_round_mesh, bench_mesh, stool_mesh;
 static rafgl_meshPUN_t beer_mug_mesh, green_bottle_mesh, wall_candle_mesh,
     food_plate_mesh;
-// Keep basic cube for fallback/debugging
 static rafgl_meshPUN_t cube_mesh;
-// Procedural candle geometry
 static rafgl_meshPUN_t candle_base_mesh, candle_flame_mesh;
 
-// Wall candles - Static models with flickering lights only
+// Wall candles
 typedef struct {
-  vec3_t position;     // Fixed wall position
-  float intensity;     // Animated light intensity (0.7-1.0)
-  float flicker_speed; // Animation speed
-  float time_offset;   // Phase offset for variety
-  int light_index;     // Index in lights array
+  vec3_t position;
+  float intensity;
+  float flicker_speed;
+  float time_offset;
+  int light_index;
 } WallCandle;
 
-// Table candles - Object hierarchy with programmatic animation (Parent: base,
-// Child: animated flame)
+// Table candles with hierarchy (base + animated flame)
 typedef struct {
-  vec3_t base_position; // Parent: candle base position (static)
-  vec3_t flame_offset;  // Child: flame offset relative to base (animated)
-  float intensity;      // Animated light intensity
-  float flicker_speed;  // Animation speed
-  float time_offset;    // Phase offset for variety
-  int light_index;      // Index in lights array
+  vec3_t base_position; // Parent: candle base (static)
+  vec3_t flame_offset;  // Child: flame offset (animated)
+  float intensity;
+  float flicker_speed;
+  float time_offset;
+  int light_index;
 } TableCandle;
 
 static WallCandle wall_candles[3];
@@ -411,8 +406,8 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   barrels[2].position = vec3(-4.5f, 0.0f, -2.0f);
   barrels[3].position = vec3(2.0f, 0.0f, 4.0f);
 
-  // Pre-calculate static transformation matrices (MAJOR performance optimization)
-  // Wall transforms - calculated once instead of every frame
+  // Pre-calculate static transformation matrices
+  // Wall transforms
   wall_transforms[0] = m4_mul(m4_translation(vec3(0.0f, WALL_HEIGHT, -5.5f)),
                               m4_scaling(vec3(WALL_LENGTH, 4.0f, WALL_THICKNESS))); // Back wall
   wall_transforms[1] = m4_mul(m4_translation(vec3(-5.5f, WALL_HEIGHT, 0.0f)),
@@ -426,27 +421,27 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   wall_transforms[5] = m4_mul(m4_translation(vec3(0.0f, 3.0f, 5.5f)),
                               m4_scaling(vec3(2.0f, 2.0f, WALL_THICKNESS))); // Door lintel
 
-  // Table transforms - calculated once instead of every frame
+  // Table transforms
   for (int i = 0; i < 3; i++) {
     table_transforms[i] = m4_mul(m4_translation(dining_tables[i].position),
                                  m4_scaling(vec3(0.7f, 0.7f, 0.7f)));
   }
 
-  // Barrel transforms - calculated once instead of every frame
+  // Barrel transforms
   for (int i = 0; i < 4; i++) {
     barrel_transforms[i] = m4_mul(m4_translation(barrels[i].position),
                                   m4_scaling(vec3(0.8f, 0.8f, 0.8f)));
   }
 
-  // Bar counter transform - calculated once instead of every frame
+  // Bar counter transform
   bar_counter_transform = m4_mul(m4_translation(vec3(3.5f, 0.0f, -2.0f)),
                                  m4_scaling(vec3(4.5f, 1.2f, 1.5f)));
 
-  // Fireplace transform - calculated once instead of every frame  
+  // Fireplace transform
   fireplace_transform = m4_mul(m4_translation(vec3(-4.5f, 1.0f, -4.0f)),
                                m4_scaling(vec3(1.0f, 2.0f, 1.0f)));
 
-  // Pre-calculate stool positions (eliminates cos/sin calculations in render loop)
+  // Pre-calculate stool positions
   for (int table_idx = 0; table_idx < 3; table_idx++) {
     for (int stool_idx = 0; stool_idx < 3; stool_idx++) {
       float angle = stool_idx * STOOL_ANGLE_STEP; // 120 degrees apart
