@@ -101,4 +101,12 @@ void create_stone_corbel_mesh(rafgl_meshPUN_t *mesh);
 // Lighting
 void render_point_lights(PointLight *lights, int count, Camera *cam, GBuffer *gb);
 
+// Unified scene rendering
+typedef enum {
+    RENDER_MODE_SHADOW,
+    RENDER_MODE_GEOMETRY
+} RenderMode;
+
+void render_unified_scene(GLuint shader_program, RenderMode mode);
+
 #endif
