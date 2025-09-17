@@ -10,15 +10,16 @@ static Camera camera;
 static GBuffer gbuffer;
 static PointLight lights[8];
 static int num_lights = 0;
-static int base_num_lights = 0; // Will be set to candle count during initialization
+static int base_num_lights =
+    0; // Will be set to candle count during initialization
 static int flashlight_active = 0;
 static float flashlight_distance =
     0.0f; // Distance from camera (in 0.5 increments)
 static float global_light_radius = 8.0f; // Adjustable radius for all lights
-static int flashlight_only_shadows = 1; // Only flashlight casts shadows
+static int flashlight_only_shadows = 1;  // Only flashlight casts shadows
 static TextureManager texture_manager;
 
-static rafgl_meshPUN_t floor_mesh, wall_mesh, table_mesh;
+static rafgl_meshPUN_t floor_mesh;
 static GLuint gbuffer_program, lighting_program, shadow_program,
     postprocess_program, ssao_program;
 static FullscreenQuad quad;
@@ -195,32 +196,35 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   rafgl_meshPUN_init(&cube_mesh);
   rafgl_meshPUN_load_cube(&cube_mesh, 1.0f);
 
-  // Initialize wall candles - Static models with flickering lights only
+  // Initialize wall candles - visual position close to walls
   wall_candles[0] = (WallCandle){
-      .position = vec3(-4.4f, 1.2f, -4.5f), // Replace wall rack position
+      .position =
+          vec3(0.0f, 1.8f, -5.15f), // Back wall - visual position close to wall
       .intensity = 1.0f,
       .flicker_speed = 3.0f,
       .time_offset = 0.0f,
       .light_index = 0};
 
-  wall_candles[1] =
-      (WallCandle){.position = vec3(4.5f, 1.2f, -4.5f), // Opposite wall
-                   .intensity = 1.0f,
-                   .flicker_speed = 2.5f,
-                   .time_offset = 1.0f,
-                   .light_index = 1};
+  wall_candles[1] = (WallCandle){
+      .position =
+          vec3(-5.15f, 1.5f, 2.0f), // Left wall - visual position close to wall
+      .intensity = 1.0f,
+      .flicker_speed = 2.5f,
+      .time_offset = 1.0f,
+      .light_index = 1};
 
-  wall_candles[2] =
-      (WallCandle){.position = vec3(0.0f, 1.8f, -4.5f), // Center back wall
-                   .intensity = 1.0f,
-                   .flicker_speed = 2.8f,
-                   .time_offset = 2.0f,
-                   .light_index = 2};
+  wall_candles[2] = (WallCandle){
+      .position = vec3(5.15f, 1.5f,
+                       -1.0f), // Right wall - visual position close to wall
+      .intensity = 1.0f,
+      .flicker_speed = 2.8f,
+      .time_offset = 2.0f,
+      .light_index = 2};
 
   // Initialize table candles - Object hierarchy with programmatic animation
   // Table model scaled by 0.7f, need to calculate actual table surface height
   // Assuming original table height ~2.0f, scaled = 1.4f surface height
-  float table_positions[][2] = {{-3.0f, -1.5f}, {0.5f, -4.0f}, {3.5f, -2.0f}};
+  float table_positions[][2] = {{-3.5f, 1.0f}, {-1.0f, 3.5f}, {1.5f, 0.5f}};
   for (int i = 0; i < num_table_candles; i++) {
     table_candles[i] = (TableCandle){
         .base_position =
@@ -234,10 +238,20 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   }
 
   // Create lights for all candles
-  // Wall candles - position lights at flame location (top of candle)
+  // Wall candles - position lights optimally for wall illumination (separate
+  // from visual position)
+  vec3_t optimal_light_positions[3] = {
+      vec3(0.0f, 1.95f,
+           -4.8f), // Back wall light - optimal distance for illumination
+      vec3(-4.8f, 1.65f,
+           2.0f), // Left wall light - optimal distance for illumination
+      vec3(4.8f, 1.65f,
+           -1.0f) // Right wall light - optimal distance for illumination
+  };
+
   for (int i = 0; i < num_wall_candles; i++) {
-    vec3_t flame_pos = v3_add(wall_candles[i].position,
-                              vec3(0.10f, 1.0f, 0.10f)); // Above candle model
+    vec3_t flame_pos =
+        optimal_light_positions[i]; // Use optimal position for light
     lights[i] =
         (PointLight){.position = flame_pos,
                      .color = vec3(1.0f, 0.6f, 0.3f), // Warm candle light
@@ -265,7 +279,7 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   num_lights = num_wall_candles + num_table_candles;
   base_num_lights = num_lights; // All candles are now base lights
 
-  printf("INITIALIZATION: %d candle lights created (%d wall + %d table)\n", 
+  printf("INITIALIZATION: %d candle lights created (%d wall + %d table)\n",
          num_lights, num_wall_candles, num_table_candles);
 
   // Initialize texture manager
@@ -274,7 +288,8 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   // Auto-activate flashlight at startup (so lights are visible immediately)
   flashlight_active = 1;
   lights[base_num_lights] = (PointLight){
-      .position = v3_add(camera.position, v3_muls(camera.front, flashlight_distance)),
+      .position =
+          v3_add(camera.position, v3_muls(camera.front, flashlight_distance)),
       .color = vec3(1.0f, 1.0f, 1.0f), // White flashlight
       .radius = global_light_radius,
       .shadowFBO = 0,
@@ -298,7 +313,7 @@ void main_state_update(GLFWwindow *window, float delta_time,
     startup_flashlight_timer += delta_time;
     if (startup_flashlight_timer > 0.5f) { // 0.5 second delay
       flashlight_active = 0;
-      num_lights = base_num_lights; // Back to just candle lights
+      num_lights = base_num_lights;     // Back to just candle lights
       startup_flashlight_timer = -1.0f; // Mark as completed
       // Flashlight auto-deactivated, candle lights now visible
     }
@@ -314,12 +329,21 @@ void main_state_update(GLFWwindow *window, float delta_time,
     // Animate flame intensity (0.7 to 1.0 range for realistic flicker)
     candle->intensity = 0.85f + 0.15f * sinf(phase) * sinf(phase * 1.3f);
 
-    // Keep light position at flame location (top of candle with slight flicker)
+    // Keep light position at optimal location (separate from visual candle
+    // position)
     vec3_t flame_flicker =
         vec3(0.005f * sinf(phase * 2.1f), 0.01f * sinf(phase * 1.7f),
              0.005f * sinf(phase * 2.3f));
-    lights[candle->light_index].position = v3_add(
-        candle->position, v3_add(vec3(0.0f, 0.15f, 0.0f), flame_flicker));
+
+    // Use optimal light positions for proper wall illumination
+    vec3_t optimal_light_positions[3] = {
+        vec3(0.0f, 1.95f, -4.8f), // Back wall light
+        vec3(-4.8f, 1.65f, 2.0f), // Left wall light
+        vec3(4.8f, 1.65f, -1.0f)  // Right wall light
+    };
+
+    lights[candle->light_index].position =
+        v3_add(optimal_light_positions[i], flame_flicker);
 
     // Update light color
     lights[candle->light_index].color =
@@ -478,26 +502,65 @@ void render_scene_geometry(GLuint shadow_program) {
   glBindVertexArray(floor_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, floor_mesh.vertex_count);
 
-  // Walls
-  model = m4_mul(m4_translation(vec3(0.0f, 2.0f, -5.0f)),
-                 m4_scaling(vec3(10.0f, 4.0f, 0.2f)));
+  // Complete wall system for shadows
+  // Back wall
+  model = m4_mul(m4_translation(vec3(0.0f, 2.0f, -5.5f)),
+                 m4_scaling(vec3(11.0f, 4.0f, 0.2f)));
   glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
                      (float *)model.m);
   glBindVertexArray(cube_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
 
-  // Bar table
-  model = m4_mul(m4_translation(vec3(4.0f, 0.0f, 0.0f)),
-                 m4_scaling(vec3(2.5f, 0.8f, 0.8f)));
+  // Left wall
+  model = m4_mul(m4_translation(vec3(-5.5f, 2.0f, 0.0f)),
+                 m4_scaling(vec3(0.2f, 4.0f, 11.0f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
+                     (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  // Right wall
+  model = m4_mul(m4_translation(vec3(5.5f, 2.0f, 0.0f)),
+                 m4_scaling(vec3(0.2f, 4.0f, 11.0f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
+                     (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  // Front wall segments
+  model = m4_mul(m4_translation(vec3(-3.0f, 2.0f, 5.5f)),
+                 m4_scaling(vec3(5.0f, 4.0f, 0.2f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
+                     (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  model = m4_mul(m4_translation(vec3(3.0f, 2.0f, 5.5f)),
+                 m4_scaling(vec3(5.0f, 4.0f, 0.2f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
+                     (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  model = m4_mul(m4_translation(vec3(0.0f, 3.0f, 5.5f)),
+                 m4_scaling(vec3(2.0f, 2.0f, 0.2f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
+                     (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  // Massive bar counter
+  model = m4_mul(m4_translation(vec3(3.5f, 0.0f, -2.0f)),
+                 m4_scaling(vec3(4.5f, 1.2f, 1.5f)));
   glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
                      (float *)model.m);
   glBindVertexArray(bench_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, bench_mesh.vertex_count);
 
-  // Beer mugs on bar
+  // Beer mugs on massive bar counter
   for (int i = 0; i < 4; i++) {
-    float bar_x = 3.0f + (i * 0.5f) - 1.0f;
-    model = m4_mul(m4_translation(vec3(bar_x, 0.65f, 0.0f)),
+    float bar_x = 2.0f + (i * 0.8f) - 1.0f;
+    model = m4_mul(m4_translation(vec3(bar_x, 0.95f, -2.0f)),
                    m4_scaling(vec3(0.12f, 0.12f, 0.12f)));
     glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
@@ -505,10 +568,10 @@ void render_scene_geometry(GLuint shadow_program) {
     glDrawArrays(GL_TRIANGLES, 0, beer_mug_mesh.vertex_count);
   }
 
-  // Bottles on bar
+  // Bottles on bar counter
   for (int i = 0; i < 2; i++) {
-    float bottle_x = 4.5f + (i * 0.8f) - 0.4f;
-    model = m4_mul(m4_translation(vec3(bottle_x, 0.65f, -0.2f)),
+    float bottle_x = 4.0f + (i * 0.8f) - 0.4f;
+    model = m4_mul(m4_translation(vec3(bottle_x, 0.62f, -1.8f)),
                    m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
     glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
@@ -516,8 +579,8 @@ void render_scene_geometry(GLuint shadow_program) {
     glDrawArrays(GL_TRIANGLES, 0, green_bottle_mesh.vertex_count);
   }
 
-  // 3 dining tables with stools
-  float table_positions[][2] = {{-3.0f, -1.5f}, {0.5f, -4.0f}, {3.5f, -2.0f}};
+  // 3 dining tables with stools - repositioned
+  float table_positions[][2] = {{-3.5f, 1.0f}, {-1.0f, 3.5f}, {1.5f, 0.5f}};
   for (int i = 0; i < 3; i++) {
     // Round table
     model = m4_mul(m4_translation(vec3(table_positions[i][0], 0.0f,
@@ -543,9 +606,9 @@ void render_scene_geometry(GLuint shadow_program) {
     }
   }
 
-  // Barrels
+  // Barrels - repositioned, removed fireplace barrel
   float barrel_positions[][2] = {
-      {5.0f, 2.0f}, {-5.0f, 1.5f}, {3.0f, -3.0f}, {-2.0f, -4.0f}};
+      {4.5f, 4.0f}, {-4.5f, 4.0f}, {-4.5f, -1.0f}, {2.0f, 4.0f}};
   for (int i = 0; i < 4; i++) {
     model = m4_mul(m4_translation(vec3(barrel_positions[i][0], 0.0f,
                                        barrel_positions[i][1])),
@@ -556,11 +619,33 @@ void render_scene_geometry(GLuint shadow_program) {
     glDrawArrays(GL_TRIANGLES, 0, barrel_mesh.vertex_count);
   }
 
-  // Wall candles
+  // Fireplace - repositioned to back corner
+  model = m4_mul(m4_translation(vec3(-4.5f, 1.0f, -4.0f)),
+                 m4_scaling(vec3(1.0f, 2.0f, 1.0f)));
+  glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1, GL_FALSE,
+                     (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  // Wall candles with proper rotations
   for (int i = 0; i < num_wall_candles; i++) {
     WallCandle *candle = &wall_candles[i];
+
+    // Apply wall-specific rotations to face tavern center
+    mat4_t rotation = m4_identity();
+    if (i == 0) {
+      // Back wall candle (no rotation needed - faces forward)
+      rotation = m4_identity();
+    } else if (i == 1) {
+      // Left wall candle - rotate 90° to face right (toward center)
+      rotation = m4_rotation_y(M_PIf / 2.0f);
+    } else if (i == 2) {
+      // Right wall candle - rotate -90° to face left (toward center)
+      rotation = m4_rotation_y(-M_PIf / 2.0f);
+    }
+
     model = m4_mul(m4_translation(candle->position),
-                   m4_scaling(vec3(0.4f, 0.4f, 0.4f)));
+                   m4_mul(rotation, m4_scaling(vec3(0.4f, 0.4f, 0.4f))));
     glUniformMatrix4fv(glGetUniformLocation(shadow_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
     glBindVertexArray(wall_candle_mesh.vao_id);
@@ -632,34 +717,76 @@ void main_state_render(GLFWwindow *window, void *args) {
   glBindVertexArray(floor_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, floor_mesh.vertex_count);
 
-  // Render tavern walls
+  // Render complete tavern wall system
   glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.5f,
               0.3f, 0.2f); // Dark wood
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 0.0f);
-  model = m4_mul(m4_translation(vec3(0.0f, 2.0f, -5.0f)),
-                 m4_scaling(vec3(10.0f, 4.0f, 0.2f)));
+
+  // Back wall
+  model = m4_mul(m4_translation(vec3(0.0f, 2.0f, -5.5f)),
+                 m4_scaling(vec3(11.0f, 4.0f, 0.2f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
   glBindVertexArray(cube_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
 
-  // Create bar table (one big bench acting as bar)
+  // Left wall
+  model = m4_mul(m4_translation(vec3(-5.5f, 2.0f, 0.0f)),
+                 m4_scaling(vec3(0.2f, 4.0f, 11.0f)));
+  glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  // Right wall
+  model = m4_mul(m4_translation(vec3(5.5f, 2.0f, 0.0f)),
+                 m4_scaling(vec3(0.2f, 4.0f, 11.0f)));
+  glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  // Front wall with door opening (two segments)
+  // Left segment
+  model = m4_mul(m4_translation(vec3(-3.0f, 2.0f, 5.5f)),
+                 m4_scaling(vec3(5.0f, 4.0f, 0.2f)));
+  glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  // Right segment
+  model = m4_mul(m4_translation(vec3(3.0f, 2.0f, 5.5f)),
+                 m4_scaling(vec3(5.0f, 4.0f, 0.2f)));
+  glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  // Door lintel (top of door opening)
+  model = m4_mul(m4_translation(vec3(0.0f, 3.0f, 5.5f)),
+                 m4_scaling(vec3(2.0f, 2.0f, 0.2f)));
+  glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
+                     GL_FALSE, (float *)model.m);
+  glBindVertexArray(cube_mesh.vao_id);
+  glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
+
+  // Create massive bar counter (Serbian šank)
   material_bind(&texture_manager.wooden_bench, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
-  model = m4_mul(m4_translation(vec3(4.0f, 0.0f, 0.0f)),
-                 m4_scaling(vec3(2.5f, 0.8f, 0.8f))); // Long bar table
+  model = m4_mul(m4_translation(vec3(3.5f, 0.0f, -2.0f)),
+                 m4_scaling(vec3(4.5f, 1.2f, 1.5f))); // Massive bar counter
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
   glBindVertexArray(bench_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, bench_mesh.vertex_count);
 
-  // Create 3 round dining tables with better spacing
+  // Create 3 round dining tables with repositioned layout
   material_bind(&texture_manager.round_table, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
-  float table_positions[][2] = {
-      {-3.0f, -1.5f},
-      {0.5f, -4.0f},
-      {3.5f, -2.0f}}; // x, z positions - more spread out
+  float table_positions[][2] = {{-3.5f, 1.0f},
+                                {-1.0f, 3.5f},
+                                {1.5f, 0.5f}}; // x, z positions - repositioned
   for (int i = 0; i < 3; i++) {
     // Round table
     model = m4_mul(m4_translation(vec3(table_positions[i][0], 0.0f,
@@ -691,12 +818,12 @@ void main_state_render(GLFWwindow *window, void *args) {
     glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   }
 
-  // Add beer mugs and bottles on the bar table
+  // Add beer mugs and bottles on the massive bar counter
   material_bind(&texture_manager.beer_mug, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   for (int i = 0; i < 4; i++) {             // 4 beer mugs across the bar
-    float bar_x = 3.0f + (i * 0.5f) - 1.0f; // Spread across bar length
-    model = m4_mul(m4_translation(vec3(bar_x, 0.65f, 0.0f)),
+    float bar_x = 2.0f + (i * 0.8f) - 1.0f; // Spread across massive bar length
+    model = m4_mul(m4_translation(vec3(bar_x, 0.95f, -2.0f)), // Raised by 0.3f
                    m4_scaling(vec3(0.12f, 0.12f, 0.12f)));
     glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
@@ -704,26 +831,28 @@ void main_state_render(GLFWwindow *window, void *args) {
     glDrawArrays(GL_TRIANGLES, 0, beer_mug_mesh.vertex_count);
   }
 
-  // Add bottles on bar
+  // Add bottles on bar counter - repositioned and lowered
   material_bind(&texture_manager.green_bottle, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   for (int i = 0; i < 2; i++) {
-    float bottle_x = 4.5f + (i * 0.8f) - 0.4f;
-    model = m4_mul(m4_translation(vec3(bottle_x, 0.65f, -0.2f)),
-                   m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
+    float bottle_x = 4.0f + (i * 0.8f) - 0.4f; // Repositioned to bar center
+    model = m4_mul(
+        m4_translation(
+            vec3(bottle_x, 0.62f, -1.8f)), // Lowered by 0.3f, positioned on bar
+        m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
     glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                        GL_FALSE, (float *)model.m);
     glBindVertexArray(green_bottle_mesh.vao_id);
     glDrawArrays(GL_TRIANGLES, 0, green_bottle_mesh.vertex_count);
   }
 
-  // Add items on dining tables (selective)
+  // Add items on dining tables (selective) - raised by 0.8f
   // Table 0: beer mug only
   material_bind(&texture_manager.beer_mug, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
-  model = m4_mul(
-      m4_translation(vec3(table_positions[0][0], 0.6f, table_positions[0][1])),
-      m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
+  model = m4_mul(m4_translation(vec3(table_positions[0][0], 1.4f,
+                                     table_positions[0][1])), // Raised by 0.8f
+                 m4_scaling(vec3(0.1f, 0.1f, 0.1f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
   glBindVertexArray(beer_mug_mesh.vao_id);
@@ -732,9 +861,9 @@ void main_state_render(GLFWwindow *window, void *args) {
   // Table 1: food plate and bottle
   material_bind(&texture_manager.food_plate, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
-  model = m4_mul(
-      m4_translation(vec3(table_positions[1][0], 0.6f, table_positions[1][1])),
-      m4_scaling(vec3(0.15f, 0.15f, 0.15f)));
+  model = m4_mul(m4_translation(vec3(table_positions[1][0], 1.4f,
+                                     table_positions[1][1])), // Raised by 0.8f
+                 m4_scaling(vec3(0.15f, 0.15f, 0.15f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
   glBindVertexArray(food_plate_mesh.vao_id);
@@ -742,9 +871,10 @@ void main_state_render(GLFWwindow *window, void *args) {
 
   material_bind(&texture_manager.green_bottle, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
-  model = m4_mul(m4_translation(vec3(table_positions[1][0] + 0.3f, 0.6f,
-                                     table_positions[1][1] + 0.2f)),
-                 m4_scaling(vec3(0.08f, 0.08f, 0.08f)));
+  model = m4_mul(
+      m4_translation(vec3(table_positions[1][0] + 0.3f, 1.4f, // Raised by 0.8f
+                          table_positions[1][1] + 0.2f)),
+      m4_scaling(vec3(0.08f, 0.08f, 0.08f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
   glBindVertexArray(green_bottle_mesh.vao_id);
@@ -752,21 +882,25 @@ void main_state_render(GLFWwindow *window, void *args) {
 
   // Table 2: nothing (empty table)
 
-  // Render fireplace - moved to corner to avoid overlaps
+  // Render fireplace - repositioned to back corner
   glUniform3f(glGetUniformLocation(gbuffer_program, "materialColor"), 0.3f,
               0.3f, 0.3f); // Stone
-  model = m4_mul(m4_translation(vec3(4.5f, 1.0f, 4.0f)),
+  glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 0.0f);
+  model = m4_mul(m4_translation(vec3(-4.5f, 1.0f, -4.0f)), // Back corner
                  m4_scaling(vec3(1.0f, 2.0f, 1.0f)));
   glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                      GL_FALSE, (float *)model.m);
   glBindVertexArray(cube_mesh.vao_id);
   glDrawArrays(GL_TRIANGLES, 0, cube_mesh.vertex_count);
 
-  // Render real barrel models around the tavern
+  // Render real barrel models around the tavern - repositioned layout
   material_bind(&texture_manager.wooden_barrel, gbuffer_program);
   glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
   float barrel_positions[][2] = {
-      {5.0f, 2.0f}, {-5.0f, 1.5f}, {3.0f, -3.0f}, {-2.0f, -4.0f}};
+      {4.5f, 4.0f},
+      {-4.5f, 4.0f},
+      {-4.5f, -1.0f},
+      {2.0f, 4.0f}}; // Repositioned, removed fireplace barrel
   for (int i = 0; i < 4; i++) {
     model = m4_mul(m4_translation(vec3(barrel_positions[i][0], 0.0f,
                                        barrel_positions[i][1])),
@@ -777,14 +911,28 @@ void main_state_render(GLFWwindow *window, void *args) {
     glDrawArrays(GL_TRIANGLES, 0, barrel_mesh.vertex_count);
   }
 
-  // Render wall candles (static .obj models on walls)
+  // Render wall candles (static .obj models on walls) with proper rotations
   if (num_wall_candles > 0) {
     material_bind(&texture_manager.wall_candle, gbuffer_program);
     glUniform1f(glGetUniformLocation(gbuffer_program, "hasTexture"), 1.0f);
     for (int i = 0; i < num_wall_candles; i++) {
       WallCandle *candle = &wall_candles[i];
+
+      // Apply wall-specific rotations to face tavern center
+      mat4_t rotation = m4_identity();
+      if (i == 0) {
+        // Back wall candle (no rotation needed - faces forward)
+        rotation = m4_identity();
+      } else if (i == 1) {
+        // Left wall candle - rotate 90° to face right (toward center)
+        rotation = m4_rotation_y(M_PIf / 2.0f);
+      } else if (i == 2) {
+        // Right wall candle - rotate -90° to face left (toward center)
+        rotation = m4_rotation_y(-M_PIf / 2.0f);
+      }
+
       model = m4_mul(m4_translation(candle->position),
-                     m4_scaling(vec3(0.4f, 0.4f, 0.4f)));
+                     m4_mul(rotation, m4_scaling(vec3(0.4f, 0.4f, 0.4f))));
       glUniformMatrix4fv(glGetUniformLocation(gbuffer_program, "model"), 1,
                          GL_FALSE, (float *)model.m);
       glBindVertexArray(wall_candle_mesh.vao_id);
@@ -888,9 +1036,10 @@ void main_state_render(GLFWwindow *window, void *args) {
 
   // Send far_plane uniform for cube map shadow calculations
   glUniform1f(glGetUniformLocation(lighting_program, "far_plane"), 25.0f);
-  
+
   // Send shadow mode toggle
-  glUniform1i(glGetUniformLocation(lighting_program, "flashlightOnlyShadows"), flashlight_only_shadows);
+  glUniform1i(glGetUniformLocation(lighting_program, "flashlightOnlyShadows"),
+              flashlight_only_shadows);
 
   // Send lights to shader
   glUniform1i(glGetUniformLocation(lighting_program, "numLights"), num_lights);
@@ -1012,25 +1161,31 @@ void texture_manager_init(TextureManager *tm) {
   // Load EACH object's OWN specific textures
 
   // 1. Wooden barrel - uses SHADED texture with metal bands, wood, etc.
-  material_load_diffuse(&tm->wooden_barrel, "res/textures/wooden_barrel_shaded.png");
-  material_load_normal(&tm->wooden_barrel, "res/textures/wooden_barrel_normal.png");
+  material_load_diffuse(&tm->wooden_barrel,
+                        "res/textures/wooden_barrel_shaded.png");
+  material_load_normal(&tm->wooden_barrel,
+                       "res/textures/wooden_barrel_normal.png");
   tm->wooden_barrel.roughness = 0.8f;
   tm->wooden_barrel.metallic = 0.0f;
 
   // 2. Round table - uses SHADED texture with full detail
-  material_load_diffuse(&tm->round_table, "res/textures/round_table_shaded.png");
+  material_load_diffuse(&tm->round_table,
+                        "res/textures/round_table_shaded.png");
   material_load_normal(&tm->round_table, "res/textures/round_table_normal.png");
   tm->round_table.roughness = 0.6f;
   tm->round_table.metallic = 0.0f;
 
   // 3. Wooden bench - uses SHADED texture with panels and details
-  material_load_diffuse(&tm->wooden_bench, "res/textures/wooden_bench_shaded.png");
-  material_load_normal(&tm->wooden_bench, "res/textures/wooden_bench_normal.png");
+  material_load_diffuse(&tm->wooden_bench,
+                        "res/textures/wooden_bench_shaded.png");
+  material_load_normal(&tm->wooden_bench,
+                       "res/textures/wooden_bench_normal.png");
   tm->wooden_bench.roughness = 0.7f;
   tm->wooden_bench.metallic = 0.0f;
 
   // 4. Wall candle - uses SHADED texture with wax, holder, flame colors
-  material_load_diffuse(&tm->wall_candle, "res/textures/wall_candle_shaded.png");
+  material_load_diffuse(&tm->wall_candle,
+                        "res/textures/wall_candle_shaded.png");
   material_load_normal(&tm->wall_candle, "res/textures/wall_candle_normal.png");
   tm->wall_candle.roughness = 0.9f;
   tm->wall_candle.metallic = 0.0f;
@@ -1042,8 +1197,10 @@ void texture_manager_init(TextureManager *tm) {
   tm->beer_mug.metallic = 0.0f;
 
   // 6. Green bottle - uses SHADED texture with glass and cork
-  material_load_diffuse(&tm->green_bottle, "res/textures/green_bottle_shaded.png");
-  material_load_normal(&tm->green_bottle, "res/textures/green_bottle_normal.png");
+  material_load_diffuse(&tm->green_bottle,
+                        "res/textures/green_bottle_shaded.png");
+  material_load_normal(&tm->green_bottle,
+                       "res/textures/green_bottle_normal.png");
   tm->green_bottle.roughness = 0.1f;
   tm->green_bottle.metallic = 0.0f;
 
@@ -1054,8 +1211,10 @@ void texture_manager_init(TextureManager *tm) {
   tm->food_plate.metallic = 0.0f;
 
   // 8. Wooden stool - uses SHADED texture with full wood detail
-  material_load_diffuse(&tm->wooden_stool, "res/textures/wooden_stool_shaded.png");
-  material_load_normal(&tm->wooden_stool, "res/textures/wooden_stool_normal.png");
+  material_load_diffuse(&tm->wooden_stool,
+                        "res/textures/wooden_stool_shaded.png");
+  material_load_normal(&tm->wooden_stool,
+                       "res/textures/wooden_stool_normal.png");
   tm->wooden_stool.roughness = 0.6f;
   tm->wooden_stool.metallic = 0.0f;
 }

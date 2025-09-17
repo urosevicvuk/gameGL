@@ -83,6 +83,12 @@ void camera_update(Camera *cam, GLFWwindow *window, float deltaTime) {
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         cam->position = v3_add(cam->position, v3_muls(v3_norm(v3_cross(cam->front, cam->up)), cam->speed * deltaTime));
     
+    // Vertical movement
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        cam->position = v3_add(cam->position, v3_muls(vec3(0.0f, 1.0f, 0.0f), cam->speed * deltaTime));
+    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS)
+        cam->position = v3_sub(cam->position, v3_muls(vec3(0.0f, 1.0f, 0.0f), cam->speed * deltaTime));
+    
     // Mouse look - simplified for now
     static double lastX = 400, lastY = 300;
     static int firstMouse = 1;
