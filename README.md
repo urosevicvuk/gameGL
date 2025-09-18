@@ -20,7 +20,7 @@ Implements circular sampling technique for realistic ambient occlusion. Enhances
 Cube map shadow mapping provides 360-degree shadow casting from point lights. Includes dynamic shadow casting from interactive flashlight with high-resolution, artifact-free shadows.
 
 **Post-Processing Pipeline**  
-HDR-capable post-processing chain with tone mapping, exposure control, gamma correction, and atmospheric effects. Creates authentic warm tavern atmosphere with subtle visual enhancements.
+Flexible post-processing system with sepia tone effect for authentic medieval atmosphere. Toggle-able with SHIFT key to switch between normal colors and warm brown/sepia tones that enhance the tavern's historical ambiance.
 
 ### Scene Features
 
@@ -40,6 +40,8 @@ Parent-child relationships for table candles with animated flame offsets. Proced
 - **Scroll Wheel** - Adjust flashlight distance
 - **Q/E** - Modify global light radius  
 - **R** - Reset flashlight distance
+- **TAB** - Toggle shadow mode (all lights vs flashlight only)
+- **SHIFT** - Toggle post-processing effect (sepia/medieval atmosphere)
 
 ### Build and Run
 ```bash

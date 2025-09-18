@@ -83,6 +83,9 @@ typedef struct {
   // SSAO program uniforms
   GLint ssao_gPosition, ssao_gNormal, ssao_projection;
   
+  // Post-processing program uniforms
+  GLint postprocess_screenTexture, postprocess_gamma, postprocess_exposure, postprocess_time;
+  
   // Additional cached uniforms
   GLint gbuffer_hasTexture_other;
   GLint gbuffer_materialColor_other;
@@ -92,7 +95,7 @@ typedef struct {
 static UniformLocations uniforms;
 
 // Key state management
-enum KeyIndex { KEY_F = 0, KEY_Q = 1, KEY_E = 2, KEY_TAB = 3, KEY_R = 4, MAX_KEYS = 5 };
+enum KeyIndex { KEY_F = 0, KEY_Q = 1, KEY_E = 2, KEY_TAB = 3, KEY_R = 4, KEY_SHIFT = 5, MAX_KEYS = 6 };
 static int key_states[MAX_KEYS] = {0};
 
 static int w, h;
@@ -105,6 +108,7 @@ static int flashlight_active = 0;
 static float flashlight_distance = 0.0f;
 static float global_light_radius = 8.0f;
 static int flashlight_only_shadows = 1;
+static int postprocess_enabled = 1;  // Post-processing enabled by default
 static TextureManager texture_manager;
 
 static rafgl_meshPUN_t floor_mesh;
@@ -289,6 +293,19 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   uniforms.material_roughness = glGetUniformLocation(gbuffer_program, "material.roughness");
   uniforms.material_metallic = glGetUniformLocation(gbuffer_program, "material.metallic");
   
+  // Cache post-processing uniforms
+  uniforms.postprocess_screenTexture = glGetUniformLocation(postprocess_program, "screenTexture");
+  uniforms.postprocess_gamma = glGetUniformLocation(postprocess_program, "gamma");
+  uniforms.postprocess_exposure = glGetUniformLocation(postprocess_program, "exposure");
+  uniforms.postprocess_time = glGetUniformLocation(postprocess_program, "time");
+  
+  // Debug uniform locations
+  printf("Post-processing uniform locations:\n");
+  printf("  screenTexture: %d\n", uniforms.postprocess_screenTexture);
+  printf("  gamma: %d\n", uniforms.postprocess_gamma);
+  printf("  exposure: %d\n", uniforms.postprocess_exposure);
+  printf("  time: %d\n", uniforms.postprocess_time);
+  
   // Cache additional uniforms for non-gbuffer programs (eliminates remaining 18 runtime lookups)
   uniforms.gbuffer_hasTexture_other = glGetUniformLocation(gbuffer_program, "hasTexture");  // Same as gbuffer_hasTexture but kept separate for clarity
   uniforms.gbuffer_materialColor_other = glGetUniformLocation(gbuffer_program, "materialColor");  // Same as gbuffer_materialColor but kept separate for clarity
@@ -309,6 +326,20 @@ void main_state_init(GLFWwindow *window, void *args, int width, int height) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
                          colorTexture, 0);
+
+  // Add depth buffer for post-processing FBO
+  GLuint postprocessDepthBuffer;
+  glGenRenderbuffers(1, &postprocessDepthBuffer);
+  glBindRenderbuffer(GL_RENDERBUFFER, postprocessDepthBuffer);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, width, height);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, postprocessDepthBuffer);
+
+  // Check framebuffer completeness
+  if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+    printf("ERROR: Post-processing framebuffer not complete!\n");
+  } else {
+    printf("Post-processing framebuffer is complete.\n");
+  }
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -728,6 +759,22 @@ void main_state_update(GLFWwindow *window, float delta_time,
     key_states[KEY_R] = 0;
   }
 
+  // Handle post-processing toggle with Shift key
+  if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT) == GLFW_PRESS) {
+    if (!key_states[KEY_SHIFT]) {
+      // Shift key pressed - toggle post-processing
+      postprocess_enabled = !postprocess_enabled;
+      if (postprocess_enabled) {
+        printf("Post-processing: ENABLED (sepia effect)\n");
+      } else {
+        printf("Post-processing: DISABLED (normal colors)\n");
+      }
+    }
+    key_states[KEY_SHIFT] = 1;
+  } else {
+    key_states[KEY_SHIFT] = 0;
+  }
+
   // Update flashlight position to follow camera at controlled distance
   if (flashlight_active) {
     lights[base_num_lights].position =
@@ -1011,7 +1058,7 @@ void main_state_render(GLFWwindow *window, void *args) {
 
   fullscreen_quad_render(&quad);
 
-  // Lighting pass - render directly to screen for now
+  // Lighting pass - render directly to screen 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -1064,6 +1111,27 @@ void main_state_render(GLFWwindow *window, void *args) {
               camera.position.x, camera.position.y, camera.position.z);
 
   fullscreen_quad_render(&quad);
+
+  // Apply post-processing only if enabled
+  if (postprocess_enabled) {
+    // Copy screen to texture and apply effect
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);  // Read from screen
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, postprocessFBO);  // Write to our FBO
+    glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    // Now apply post-processing from our FBO back to screen
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    glUseProgram(postprocess_program);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, colorTexture);
+    glUniform1i(uniforms.postprocess_screenTexture, 0);
+    
+    glDisable(GL_DEPTH_TEST);
+    fullscreen_quad_render(&quad);
+    glEnable(GL_DEPTH_TEST);
+  }
 }
 
 void main_state_cleanup(GLFWwindow *window, void *args) {
